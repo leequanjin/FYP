@@ -1,15 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-
-class TodoItem {
-  String title;
-  String date;
-  bool completed;
-
-  TodoItem({required this.title, required this.date, this.completed = false});
-
-  DateTime get parsedDate => DateFormat('dd-MM-yyyy').parse(date);
-}
+import 'package:moodly/models/task.dart';
+import 'package:moodly/services/database_service.dart';
 
 class ListPage extends StatefulWidget {
   const ListPage({super.key});
@@ -19,128 +11,310 @@ class ListPage extends StatefulWidget {
 }
 
 class _ListPageState extends State<ListPage> {
-  List<TodoItem> todos = [
-    TodoItem(title: "Buy groceries", date: "19-05-2025"),
-    TodoItem(title: "Gym workout", date: "19-05-2025", completed: true),
+  final DatabaseService _databaseService = DatabaseService.instance;
 
-    TodoItem(title: "Buy groceries", date: "19-06-2025"),
-    TodoItem(title: "Gym workout", date: "19-06-2025", completed: true),
+  List<Task> _tasks = [];
+  String? _task;
+  DateTime? _date = DateTime.now();
 
-    TodoItem(title: "Submit FYP Chapter 4", date: "27-06-2025"),
-    TodoItem(title: "Meet Leon", date: "09-10-2025"),
+  @override
+  void initState() {
+    super.initState();
+    _loadTasks();
+  }
 
-    TodoItem(title: "Dentist Appointment", date: "14-07-2025", completed: true),
-    TodoItem(title: "Clean desk", date: "13-07-2025", completed: true),
-  ];
-
-  void toggleCompletion(TodoItem item) {
+  void _loadTasks() async {
+    final tasks = await _databaseService.getTasks();
     setState(() {
-      item.completed = !item.completed;
+      _tasks = tasks;
     });
   }
 
-  void deleteTodo(TodoItem item) {
-    setState(() {
-      todos.remove(item);
-    });
-  }
+  void _addTask() {
+    _date = DateTime.now();
 
-  void editTodo(TodoItem item) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Edit '${item.title}' tapped")),
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Add Task'),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  onChanged: (value) {
+                    setState(() {
+                      _task = value;
+                    });
+                  },
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Task Title',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          _date != null
+                              ? DateFormat('dd-MM-yyyy').format(_date!)
+                              : 'No date selected',
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: _date ?? DateTime.now(),
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          setState(() {
+                            _date = picked;
+                          });
+                          setDialogState(() {}); // Refresh UI inside dialog
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  onPressed: () async {
+                    if (_task?.trim().isEmpty ?? true) return;
+
+                    await _databaseService.addTask(_task!.trim(), _date!);
+
+                    setState(() {
+                      _task = null;
+                    });
+
+                    Navigator.of(dialogContext).pop();
+                    _loadTasks();
+                  },
+                  child: const Text('Add Task'),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
     );
   }
 
-  bool isPast(TodoItem item) {
-    final today = DateTime.now();
-    final itemDate = item.parsedDate;
-    return itemDate.isBefore(today);
+  void _toggleCompletion(Task task) async {
+    final updatedStatus = task.status == 0 ? 1 : 0;
+    await _databaseService.updateTaskStatus(task.id, updatedStatus);
+    _loadTasks();
   }
 
-  bool isToday(TodoItem item) {
-    final today = DateTime.now();
-    final itemDate = item.parsedDate;
-    return itemDate.year == today.year &&
-        itemDate.month == today.month &&
-        itemDate.day == today.day;
+  void _deleteTask(Task task) async {
+    await _databaseService.deleteTask(task.id);
+    _loadTasks();
   }
 
-  bool isFuture(TodoItem item) {
+  void _editTask(Task task) {
+    String editedTitle = task.title;
+    DateTime editedDate = DateFormat('dd-MM-yyyy').parse(task.date);
+
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Edit Task'),
+        content: StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: TextEditingController(text: editedTitle),
+                  onChanged: (value) {
+                    editedTitle = value;
+                  },
+                  decoration: const InputDecoration(
+                    border: OutlineInputBorder(),
+                    hintText: 'Task Title',
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.only(left: 8.0),
+                        child: Text(
+                          DateFormat('dd-MM-yyyy').format(editedDate),
+                          style: Theme.of(context).textTheme.bodyMedium,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.calendar_today),
+                      onPressed: () async {
+                        final picked = await showDatePicker(
+                          context: context,
+                          initialDate: editedDate,
+                          firstDate: DateTime(2000),
+                          lastDate: DateTime(2100),
+                        );
+                        if (picked != null) {
+                          editedDate = picked;
+                          setDialogState(() {}); // refresh UI
+                        }
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    backgroundColor: Theme.of(context).colorScheme.primary,
+                  ),
+                  onPressed: () async {
+                    if (editedTitle.trim().isEmpty) return;
+
+                    await _databaseService.updateTask(
+                      task.id,
+                      editedTitle.trim(),
+                      editedDate,
+                    );
+
+                    Navigator.of(dialogContext).pop();
+                    _loadTasks();
+                  },
+                  child: const Text('Save Changes'),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  DateTime parseDate(String date) => DateFormat('dd-MM-yyyy').parse(date);
+
+  bool isPast(Task task) {
     final today = DateTime.now();
-    final itemDate = item.parsedDate;
-    return itemDate.isAfter(today);
+    final taskDate = parseDate(task.date);
+    return taskDate.isBefore(DateTime(today.year, today.month, today.day));
+  }
+
+  bool isToday(Task task) {
+    final today = DateTime.now();
+    final taskDate = parseDate(task.date);
+    return taskDate.year == today.year &&
+        taskDate.month == today.month &&
+        taskDate.day == today.day;
+  }
+
+  bool isFuture(Task task) {
+    final today = DateTime.now();
+    final taskDate = parseDate(task.date);
+    return taskDate.isAfter(DateTime(today.year, today.month, today.day));
   }
 
   @override
   Widget build(BuildContext context) {
-    final previousItems = todos
-        .where((t) => isPast(t) && !t.completed && !isToday(t))
-        .toList();
-    final todayItems = todos.where((t) => isToday(t) && !t.completed).toList();
-    final futureItems = todos
-        .where((t) => isFuture(t) && !t.completed)
-        .toList();
-    final completedItems = todos.where((t) => t.completed).toList();
+    final previousItems =
+        _tasks
+            .where((t) => isPast(t) && (t.status == 0) && !isToday(t))
+            .toList()
+          ..sort((a, b) => parseDate(a.date).compareTo(parseDate(b.date)));
+    final todayItems =
+        _tasks.where((t) => isToday(t) && (t.status == 0)).toList()
+          ..sort((a, b) => parseDate(a.date).compareTo(parseDate(b.date)));
+    final futureItems =
+        _tasks.where((t) => isFuture(t) && (t.status == 0)).toList()
+          ..sort((a, b) => parseDate(a.date).compareTo(parseDate(b.date)));
+    final completedItems = _tasks.where((t) => (t.status == 1)).toList()
+      ..sort((a, b) => parseDate(a.date).compareTo(parseDate(b.date)));
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: Expanded(
-        child: ListView(
-          children: [
-            if (previousItems.isNotEmpty) ...[
-              const SectionHeader(title: "Previous"),
-              const SizedBox(height: 4),
-              ...previousItems.map(
-                (todo) => TodoCard(
-                  todo: todo,
-                  onToggle: toggleCompletion,
-                  onEdit: editTodo,
-                  onDelete: deleteTodo,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (todayItems.isNotEmpty) ...[
-              const SectionHeader(title: "Today"),
-              const SizedBox(height: 4),
-              ...todayItems.map(
-                (todo) => TodoCard(
-                  todo: todo,
-                  onToggle: toggleCompletion,
-                  onEdit: editTodo,
-                  onDelete: deleteTodo,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (futureItems.isNotEmpty) ...[
-              const SectionHeader(title: "Upcoming"),
-              const SizedBox(height: 4),
-              ...futureItems.map(
-                (todo) => TodoCard(
-                  todo: todo,
-                  onToggle: toggleCompletion,
-                  onEdit: editTodo,
-                  onDelete: deleteTodo,
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            if (completedItems.isNotEmpty) ...[
-              const SectionHeader(title: "Completed"),
-              const SizedBox(height: 4),
-              ...completedItems.map(
-                (todo) => TodoCard(
-                  todo: todo,
-                  onToggle: toggleCompletion,
-                  onEdit: editTodo,
-                  onDelete: deleteTodo,
-                ),
-              ),
-            ],
-          ],
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Expanded(
+            child: ListView(
+              children: [
+                if (previousItems.isNotEmpty) ...[
+                  const SectionHeader(title: "Previous"),
+                  const SizedBox(height: 4),
+                  ...previousItems.map(
+                    (task) => TodoCard(
+                      task: task,
+                      onToggle: _toggleCompletion,
+                      onEdit: _editTask,
+                      onDelete: _deleteTask,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (todayItems.isNotEmpty) ...[
+                  const SectionHeader(title: "Today"),
+                  const SizedBox(height: 4),
+                  ...todayItems.map(
+                    (task) => TodoCard(
+                      task: task,
+                      onToggle: _toggleCompletion,
+                      onEdit: _editTask,
+                      onDelete: _deleteTask,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (futureItems.isNotEmpty) ...[
+                  const SectionHeader(title: "Upcoming"),
+                  const SizedBox(height: 4),
+                  ...futureItems.map(
+                    (task) => TodoCard(
+                      task: task,
+                      onToggle: _toggleCompletion,
+                      onEdit: _editTask,
+                      onDelete: _deleteTask,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                if (completedItems.isNotEmpty) ...[
+                  const SectionHeader(title: "Completed"),
+                  const SizedBox(height: 4),
+                  ...completedItems.map(
+                    (task) => TodoCard(
+                      task: task,
+                      onToggle: _toggleCompletion,
+                      onEdit: _editTask,
+                      onDelete: _deleteTask,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
-      ),
+        Positioned(
+          bottom: 16,
+          right: 16,
+          child: FloatingActionButton(
+            elevation: 2,
+            onPressed: _addTask,
+            child: const Icon(Icons.add),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -159,14 +333,14 @@ class SectionHeader extends StatelessWidget {
 }
 
 class TodoCard extends StatelessWidget {
-  final TodoItem todo;
-  final Function(TodoItem) onToggle;
-  final Function(TodoItem) onEdit;
-  final Function(TodoItem) onDelete;
+  final Task task;
+  final Function(Task) onToggle;
+  final Function(Task) onEdit;
+  final Function(Task) onDelete;
 
   const TodoCard({
     super.key,
-    required this.todo,
+    required this.task,
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
@@ -201,27 +375,24 @@ class TodoCard extends StatelessWidget {
               ),
               leading: IconButton(
                 icon: Icon(
-                  todo.completed
+                  task.status == 1
                       ? Icons.check_circle
                       : Icons.radio_button_unchecked,
-                  color: todo.completed
+                  color: task.status == 1
                       ? Theme.of(context).colorScheme.primary
                       : Colors.grey,
                   size: 20,
                 ),
-                onPressed: () => onToggle(todo),
+                onPressed: () => onToggle(task),
               ),
               title: Text(
-                todo.title,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  fontWeight: FontWeight.w500,
-                  decoration: todo.completed
-                      ? TextDecoration.lineThrough
-                      : null,
-                ),
+                task.title,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
               ),
               subtitle: Text(
-                todo.date,
+                task.date,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: Theme.of(context).colorScheme.primary,
                 ),
@@ -230,9 +401,9 @@ class TodoCard extends StatelessWidget {
                 icon: const Icon(Icons.more_vert, size: 20),
                 onSelected: (value) {
                   if (value == 'edit') {
-                    onEdit(todo);
+                    onEdit(task);
                   } else if (value == 'delete') {
-                    onDelete(todo);
+                    onDelete(task);
                   }
                 },
                 itemBuilder: (context) => [

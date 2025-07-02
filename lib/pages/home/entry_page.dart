@@ -168,18 +168,18 @@ class _EntryPageState extends State<EntryPage> {
                       icon: const Icon(Icons.font_download),
                     ),
                     IconButton(
-                      tooltip: 'Texture',
+                      tooltip: 'Bulleted List',
                       onPressed: () {
-                        // TODO: Texture logic
+                        // TODO: Bulleted list logic
                       },
-                      icon: const Icon(Icons.texture),
+                      icon: const Icon(Icons.format_list_bulleted),
                     ),
                     IconButton(
-                      tooltip: 'Align Text',
+                      tooltip: 'Bold Text',
                       onPressed: () {
-                        // TODO: Text alignment logic
+                        // TODO: Bold  logic
                       },
-                      icon: const Icon(Icons.format_align_center),
+                      icon: const Icon(Icons.format_bold),
                     ),
                     IconButton(
                       tooltip: 'Insert Image',

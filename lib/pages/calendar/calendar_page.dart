@@ -61,8 +61,8 @@ class _CalendarPageState extends State<CalendarPage> {
             child: Padding(
               padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
               child: TableCalendar<Event>(
-                firstDay: kFirstDay,
-                lastDay: kLastDay,
+                firstDay: DateTime.utc(2010,10,20),
+                lastDay: DateTime.utc(2040,10,20),
                 focusedDay: _focusedDay,
                 selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
                 calendarFormat: _calendarFormat,

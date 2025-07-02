@@ -40,7 +40,7 @@ class _HomePageState extends State<HomePage> {
         Positioned(
           bottom: 16,
           right: 16,
-          child: FloatingActionButton.extended(
+          child: FloatingActionButton(
             elevation: 2,
             onPressed: () {
               Navigator.push(
@@ -48,8 +48,7 @@ class _HomePageState extends State<HomePage> {
                 MaterialPageRoute(builder: (context) => const EntryPage()),
               );
             },
-            icon: const Icon(Icons.add),
-            label: const Text("New Entry"),
+            child: const Icon(Icons.add),
           ),
         ),
       ],
