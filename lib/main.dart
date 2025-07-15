@@ -2,8 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:moodly/pages/bottom_nav/bottom_nav_page.dart';
 import 'package:moodly/theme/theme_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:sqflite/sqflite.dart';
 
-void main() {
+void main() async {
+  // WidgetsFlutterBinding.ensureInitialized();
+  // await deleteDatabase(await getDatabasesPath().then((path) => '$path/master_db.db'));
+
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
@@ -11,6 +15,7 @@ void main() {
     ),
   );
 }
+
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
