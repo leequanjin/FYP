@@ -1,0 +1,16 @@
+const kDefaultTags = <String>[
+  'Work',
+  'Family',
+  'Health',
+  'Study',
+  'Gratitude',
+  'Reflection',
+  'Travel',
+  'Exercise',
+  'Productivity',
+  'Mood',
+  'Relationships',
+  'Finance',
+  'Idea',
+  'Goal',
+];

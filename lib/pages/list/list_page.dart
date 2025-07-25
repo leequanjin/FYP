@@ -157,7 +157,11 @@ class _ListPageState extends State<ListPage> {
                   onPressed: () async {
                     if (editedTitle.trim().isEmpty) return;
 
-                    await TaskTable.update(task.id!, editedTitle.trim(), editedDate);
+                    await TaskTable.update(
+                      task.id!,
+                      editedTitle.trim(),
+                      editedDate,
+                    );
                     Navigator.of(dialogContext).pop();
                     _loadTasks();
                   },
@@ -182,8 +186,7 @@ class _ListPageState extends State<ListPage> {
     _loadTasks();
   }
 
-  DateTime _parseDate(String date) =>
-      DateFormat('dd-MM-yyyy').parse(date);
+  DateTime _parseDate(String date) => DateFormat('dd-MM-yyyy').parse(date);
 
   bool _isPast(Task task) {
     final today = DateTime.now();
@@ -207,43 +210,43 @@ class _ListPageState extends State<ListPage> {
 
   @override
   Widget build(BuildContext context) {
-    final previousItems = _tasks
-        .where((t) => _isPast(t) && t.status == 0 && !_isToday(t))
-        .toList()
-      ..sort((a, b) => _parseDate(a.date).compareTo(_parseDate(b.date)));
+    final previousItems =
+        _tasks
+            .where((t) => _isPast(t) && t.status == 0 && !_isToday(t))
+            .toList()
+          ..sort((a, b) => _parseDate(a.date).compareTo(_parseDate(b.date)));
 
-    final todayItems = _tasks
-        .where((t) => _isToday(t) && t.status == 0)
-        .toList()
-      ..sort((a, b) => _parseDate(a.date).compareTo(_parseDate(b.date)));
+    final todayItems =
+        _tasks.where((t) => _isToday(t) && t.status == 0).toList()
+          ..sort((a, b) => _parseDate(a.date).compareTo(_parseDate(b.date)));
 
-    final futureItems = _tasks
-        .where((t) => _isFuture(t) && t.status == 0)
-        .toList()
-      ..sort((a, b) => _parseDate(a.date).compareTo(_parseDate(b.date)));
+    final futureItems =
+        _tasks.where((t) => _isFuture(t) && t.status == 0).toList()
+          ..sort((a, b) => _parseDate(a.date).compareTo(_parseDate(b.date)));
 
-    final completedItems = _tasks
-        .where((t) => t.status == 1)
-        .toList()
+    final completedItems = _tasks.where((t) => t.status == 1).toList()
       ..sort((a, b) => _parseDate(a.date).compareTo(_parseDate(b.date)));
 
     return Stack(
       children: [
         Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: ListView(
-            children: [
-              if (previousItems.isNotEmpty)
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 400),
+            switchInCurve: Curves.easeInOut,
+            switchOutCurve: Curves.easeInOut,
+            child: ListView(
+              key: ValueKey(_tasks), // Ensures switch triggers on change
+              children: [
                 ..._buildSection("Previous", previousItems),
-              if (todayItems.isNotEmpty)
                 ..._buildSection("Today", todayItems),
-              if (futureItems.isNotEmpty)
                 ..._buildSection("Upcoming", futureItems),
-              if (completedItems.isNotEmpty)
                 ..._buildSection("Completed", completedItems),
-            ],
+              ],
+            ),
           ),
         ),
+
         Positioned(
           bottom: 16,
           right: 16,
@@ -260,13 +263,23 @@ class _ListPageState extends State<ListPage> {
   List<Widget> _buildSection(String title, List<Task> items) => [
     SectionHeader(title: title),
     const SizedBox(height: 4),
-    ...items.map((task) => TodoCard(
-      task: task,
-      onToggle: _toggleCompletion,
-      onEdit: _editTask,
-      onDelete: _deleteTask,
-    )),
-    const SizedBox(height: 12),
+    Divider(
+      height: 1,
+      thickness: 1,
+      color: Theme.of(context).colorScheme.outlineVariant,
+      indent: 8,
+      endIndent: 8,
+    ),
+    const SizedBox(height: 8),
+    ...items.map(
+      (task) => TodoCard(
+        task: task,
+        onToggle: _toggleCompletion,
+        onEdit: _editTask,
+        onDelete: _deleteTask,
+      ),
+    ),
+    const SizedBox(height: 24),
   ];
 }
 
@@ -277,7 +290,7 @@ class SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(left: 8.0),
+      padding: const EdgeInsets.only(left: 12.0),
       child: Text(title, style: Theme.of(context).textTheme.titleSmall),
     );
   }
@@ -317,10 +330,15 @@ class TodoCard extends StatelessWidget {
           Expanded(
             child: ListTile(
               dense: true,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 12,
+                vertical: 4,
+              ),
               leading: IconButton(
                 icon: Icon(
-                  task.status == 1 ? Icons.check_circle : Icons.radio_button_unchecked,
+                  task.status == 1
+                      ? Icons.check_circle
+                      : Icons.radio_button_unchecked,
                   color: task.status == 1
                       ? Theme.of(context).colorScheme.primary
                       : Colors.grey,
@@ -328,15 +346,18 @@ class TodoCard extends StatelessWidget {
                 ),
                 onPressed: () => onToggle(task),
               ),
-              title: Text(task.title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyLarge
-                      ?.copyWith(fontWeight: FontWeight.w500)),
-              subtitle: Text(task.date,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: Theme.of(context).colorScheme.primary,
-                  )),
+              title: Text(
+                task.title,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w500),
+              ),
+              subtitle: Text(
+                task.date,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+              ),
               trailing: PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, size: 20),
                 onSelected: (value) {

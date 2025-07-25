@@ -1,4 +1,7 @@
+import 'package:moodly/constants/default_tags.dart';
 import 'package:moodly/db/tables/journal_table.dart';
+import 'package:moodly/db/tables/journal_tag_table.dart';
+import 'package:moodly/db/tables/tag_table.dart';
 import 'package:moodly/db/tables/task_table.dart';
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
@@ -23,6 +26,9 @@ class DatabaseService {
       onCreate: (db, version) async {
         await TaskTable.createTable(db);
         await JournalTable.createTable(db);
+        await TagTable.createTable(db);
+        await TagTable.seedDefaults(db, kDefaultTags);
+        await JournalTagTable.createTable(db);
       },
     );
   }

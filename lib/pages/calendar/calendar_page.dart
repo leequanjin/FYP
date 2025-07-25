@@ -189,7 +189,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         markerBuilder: (context, date, _) {
                           final key = DateFormat('dd-MM-yyyy').format(date);
                           final entry = _entryMap[key];
-                          if (entry != null && entry.mood != null) {
+                          if (entry != null) {
                             return Positioned(
                               bottom: 12,
                               child: Container(
@@ -221,58 +221,53 @@ class _CalendarPageState extends State<CalendarPage> {
                 ),
                 const SizedBox(height: 8),
                 // 📝 Entry Card
-                _selectedEntry != null
-                    ? Card(
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
-                          side: BorderSide(
-                            color: Theme.of(context).colorScheme.outlineVariant,
-                            width: 1,
-                          ),
+                Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                    side: BorderSide(
+                      color: Theme.of(context).colorScheme.outlineVariant,
+                      width: 1,
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          _selectedEntry?.content?.isNotEmpty == true
+                              ? _selectedEntry!.content!
+                              : "(Empty Entry)",
+                          style: Theme.of(context).textTheme.bodyLarge,
                         ),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _selectedEntry!.content?.isNotEmpty == true
-                                    ? _selectedEntry!.content!
-                                    : "(No content)",
-                                style: Theme.of(context).textTheme.bodyLarge,
-                              ),
-                              const SizedBox(height: 12),
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: ElevatedButton.icon(
-                                  icon: const Icon(Icons.edit, size: 18),
-                                  label: const Text("Edit"),
-                                  onPressed: () {
-                                    final parsedDate = DateFormat(
-                                      'dd-MM-yyyy',
-                                    ).parse(_selectedEntry!.date);
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => EntryPage(
-                                          existingText: _selectedEntry!.content,
-                                          date: parsedDate,
-                                        ),
-                                      ),
-                                    ).then((_) => _loadAllEntries());
-                                  },
+                        const SizedBox(height: 12),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: FilledButton.icon(
+                            icon: const Icon(Icons.edit, size: 18),
+                            label: const Text("Edit"),
+                            onPressed: () {
+                              final parsedDate = _selectedEntry != null
+                                  ? DateFormat('dd-MM-yyyy').parse(_selectedEntry!.date)
+                                  : _focusedDay;
+
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => EntryPage(
+                                    existingText: _selectedEntry?.content ?? '',
+                                    date: parsedDate,
+                                  ),
                                 ),
-                              ),
-                            ],
+                              ).then((_) => _loadAllEntries());
+                            },
                           ),
                         ),
-                      )
-                    : Center(
-                        child: Text(
-                          "No entry for this day.",
-                          style: Theme.of(context).textTheme.bodyMedium,
-                        ),
-                      ),
+                      ],
+                    ),
+                  ),
+                )
+
               ],
             ),
           ),
