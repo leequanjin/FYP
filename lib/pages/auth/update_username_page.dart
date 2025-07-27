@@ -24,6 +24,8 @@ class _UpdateUsernamePageState extends State<UpdateUsernamePage> {
       final newUsername = _controllerUsername.text.trim();
       await authService.value.updateUsername(username: newUsername);
       showSnackBarSuccess();
+      if (mounted) Navigator.pop(context);
+
     } catch (e) {
       showSnackBarFailure();
     }

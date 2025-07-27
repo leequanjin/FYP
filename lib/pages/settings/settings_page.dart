@@ -25,16 +25,16 @@ class SettingsPage extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Logout'),
-          content: Text('Are you sure you want to log out?'),
+          title: const Text('Logout'),
+          content: const Text('Are you sure you want to log out?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
             TextButton(
               onPressed: () => Navigator.of(context).pop(true),
-              child: Text('Logout'),
+              child: const Text('Logout'),
             ),
           ],
         );
@@ -44,6 +44,8 @@ class SettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final user = authService.value.currentUser;
+
     return ListView(
       children: [
         const SizedBox(height: 24),
@@ -62,7 +64,9 @@ class SettingsPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                  MaterialPageRoute(
+                    builder: (_) => user != null ? const ProfilePage() : const LoginPage(),
+                  ),
                 );
               },
             ),
@@ -104,28 +108,28 @@ class SettingsPage extends StatelessWidget {
               title: 'About Us',
               onTap: () {},
             ),
-            SettingsTile(
-              icon: Icons.login,
-              title: 'Sign In',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const LoginPage()),
-                );
-              },
-            ),
-            SettingsTile(
-              icon: Icons.login,
-              title: 'Logout',
-              onTap: () async {
-                {
+            if (user == null)
+              SettingsTile(
+                icon: Icons.login,
+                title: 'Sign In',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                  );
+                },
+              ),
+            if (user != null)
+              SettingsTile(
+                icon: Icons.logout,
+                title: 'Logout',
+                onTap: () async {
                   bool? confirmLogout = await showLogoutConfirmation(context);
                   if (confirmLogout == true) {
                     logout(context);
                   }
-                }
-              },
-            ),
+                },
+              ),
           ],
         ),
       ],
@@ -133,9 +137,9 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildSectionCard(
-    BuildContext context, {
-    required List<SettingsTile> tiles,
-  }) {
+      BuildContext context, {
+        required List<SettingsTile> tiles,
+      }) {
     return Card(
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(

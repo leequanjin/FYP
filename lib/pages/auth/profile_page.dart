@@ -5,9 +5,14 @@ import 'package:moodly/pages/auth/delete_account_page.dart';
 import 'package:moodly/pages/auth/update_username_page.dart';
 import 'package:moodly/utils/auth_service.dart';
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
 
+  @override
+  State<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
   @override
   Widget build(BuildContext context) {
     final user = authService.value.currentUser;
@@ -45,7 +50,11 @@ class ProfilePage extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (_) => const UpdateUsernamePage(),
                         ),
-                      );
+                      ).then((_) {
+                        setState(
+                          () {},
+                        ); // Rebuild the ProfilePage when coming back
+                      });
                     },
                   ),
                   SettingsTile(
