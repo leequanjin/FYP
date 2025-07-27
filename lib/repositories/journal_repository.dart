@@ -1,4 +1,3 @@
-import 'package:moodly/db/database_service.dart';
 import 'package:moodly/db/tables/journal_table.dart';
 import 'package:moodly/db/tables/journal_tag_table.dart';
 import 'package:moodly/db/tables/tag_table.dart';
@@ -11,19 +10,24 @@ class JournalRepository {
     required DateTime date,
     required String mood,
     required List<String> tags,
+    List<String> imagePaths = const [],
+    List<String> thumbPaths = const [],
   }) async {
     if (id == null) {
-      await JournalTable.add(content, date, mood);
+      await JournalTable.add(content, date, mood, imagePaths, thumbPaths);
       final inserted = await JournalTable.getByDate(date);
-      if (inserted == null || inserted.id == null) return;
+      if (inserted?.id == null) return;
 
+      // tags
       final tagIds = <int>[];
       for (final t in tags) {
         tagIds.add(await TagTable.ensure(t));
       }
-      await JournalTagTable.replaceTags(inserted.id!, tagIds);
+      await JournalTagTable.replaceTags(inserted!.id!, tagIds);
     } else {
-      await JournalTable.update(id, content, date, mood);
+      await JournalTable.update(id, content, date, mood, imagePaths, thumbPaths);
+
+      // tags
       final tagIds = <int>[];
       for (final t in tags) {
         tagIds.add(await TagTable.ensure(t));
@@ -33,16 +37,23 @@ class JournalRepository {
   }
 
   static Future<List<JournalEntry>> getAll() async {
-    final entries = await JournalTable.getAll();
+    final rows = await JournalTable.getAll();
     final result = <JournalEntry>[];
 
-    for (final e in entries) {
+    for (final e in rows) {
       if (e.id == null) continue;
       final tagIds = await JournalTagTable.getTagIdsForJournal(e.id!);
       final tagNames = await TagTable.getTagsForIds(tagIds);
       result.add(
         JournalEntry.fromMap(
-          e.toMap(),
+          {
+            'id': e.id,
+            'content': e.content,
+            'date': e.date,
+            'mood': e.mood,
+            'images': e.imagePaths.join(','),
+            'thumbs': e.thumbPaths.join(','),
+          },
           tags: tagNames,
         ),
       );
@@ -58,31 +69,16 @@ class JournalRepository {
     final tagIds = await JournalTagTable.getTagIdsForJournal(entry.id!);
     final tagNames = await TagTable.getTagsForIds(tagIds);
 
-    return JournalEntry.fromMap(entry.toMap(), tags: tagNames);
-  }
-
-  static Future<List<JournalEntry>> getByTag(String tagName) async {
-    final db = await DatabaseService.instance.database;
-    final rows = await db.rawQuery('''
-      SELECT j.*
-      FROM journals j
-      JOIN journal_tags jt ON jt.journal_id = j.id
-      JOIN tags t ON t.id = jt.tag_id
-      WHERE t.name = ?
-      ORDER BY j.date DESC
-    ''', [tagName]);
-
-    final result = <JournalEntry>[];
-    for (final row in rows) {
-      final id = row['id'] as int?;
-      final tags = id == null
-          ? <String>[]
-          : await TagTable.getTagsForIds(
-        await JournalTagTable.getTagIdsForJournal(id),
-      );
-
-      result.add(JournalEntry.fromMap(row, tags: tags));
-    }
-    return result;
+    return JournalEntry.fromMap(
+      {
+        'id': entry.id,
+        'content': entry.content,
+        'date': entry.date,
+        'mood': entry.mood,
+        'images': entry.imagePaths.join(','),
+        'thumbs': entry.thumbPaths.join(','),
+      },
+      tags: tagNames,
+    );
   }
 }

@@ -1,3 +1,4 @@
+// lib/db/tables/journal_table.dart
 import 'package:intl/intl.dart';
 import 'package:moodly/db/database_service.dart';
 import 'package:moodly/models/JournalEntry.dart';
@@ -9,24 +10,36 @@ class JournalTable {
   static const columnContent = "content";
   static const columnDate = "date";
   static const columnMood = "mood";
+  static const columnImages = "images";
+  static const columnThumbs = "thumbs";
 
   static Future<void> createTable(Database db) async {
     await db.execute('''
-    CREATE TABLE $tableName (
-      $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
-      $columnContent TEXT,
-      $columnDate TEXT NOT NULL,
-      $columnMood TEXT NOT NULL DEFAULT 'neutral'
-    )
-  ''');
+      CREATE TABLE $tableName (
+        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnContent TEXT,
+        $columnDate TEXT NOT NULL,
+        $columnMood TEXT NOT NULL DEFAULT 'Neutral',
+        $columnImages TEXT NOT NULL DEFAULT '',
+        $columnThumbs TEXT NOT NULL DEFAULT ''
+      )
+    ''');
   }
 
-  static Future<void> add(String? content, DateTime date, String? selectedMood) async {
+  static Future<void> add(
+      String? content,
+      DateTime date,
+      String? selectedMood,
+      List<String> imagePaths,
+      List<String> thumbPaths,
+      ) async {
     final db = await DatabaseService.instance.database;
     await db.insert(tableName, {
       columnContent: content,
       columnDate: DateFormat('dd-MM-yyyy').format(date),
-      columnMood: selectedMood ?? 'neutral',
+      columnMood: selectedMood ?? 'Neutral',
+      columnImages: imagePaths.join(','),
+      columnThumbs: thumbPaths.join(','),
     });
   }
 
@@ -36,14 +49,23 @@ class JournalTable {
     return data.map((e) => JournalEntry.fromMap(e)).toList();
   }
 
-  static Future<void> update(int id, String? content, DateTime date, String? selectedMood) async {
+  static Future<void> update(
+      int id,
+      String? content,
+      DateTime date,
+      String? selectedMood,
+      List<String> imagePaths,
+      List<String> thumbPaths,
+      ) async {
     final db = await DatabaseService.instance.database;
     await db.update(
       tableName,
       {
         columnContent: content,
         columnDate: DateFormat('dd-MM-yyyy').format(date),
-        columnMood: selectedMood ?? 'neutral',
+        columnMood: selectedMood ?? 'Neutral',
+        columnImages: imagePaths.join(','),
+        columnThumbs: thumbPaths.join(','),
       },
       where: '$columnId = ?',
       whereArgs: [id],

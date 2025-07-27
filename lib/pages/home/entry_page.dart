@@ -1,7 +1,13 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:moodly/db/tables/tag_table.dart';
 import 'package:moodly/models/JournalEntry.dart';
+import 'package:moodly/pages/image/FullImagePage.dart';
 import 'package:moodly/repositories/journal_repository.dart';
+import 'package:moodly/utils/thumbnail_helper.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 
 class EntryPage extends StatefulWidget {
   final String? existingText;
@@ -16,10 +22,15 @@ class EntryPage extends StatefulWidget {
 class _EntryPageState extends State<EntryPage> {
   late TextEditingController _controller;
   late DateTime _entryDate;
+  final ImagePicker _picker = ImagePicker();
 
   JournalEntry? _existingEntry;
-  String _selectedMood = 'Okay';
+  String _selectedMood = 'Neutral';
   List<String> _tags = [];
+
+  /// Store both full paths & thumb paths (same indexing)
+  final List<String> _imagePaths = [];
+  final List<String> _thumbPaths = [];
 
   @override
   void initState() {
@@ -38,8 +49,30 @@ class _EntryPageState extends State<EntryPage> {
         _controller.text = entry.content ?? "";
         _selectedMood = entry.mood;
         _tags = [...entry.tags];
+        _imagePaths.addAll(entry.imagePaths);
+        _thumbPaths.addAll(entry.thumbPaths);
       });
     }
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await _picker.pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    // 1) Copy into app documents dir
+    final appDir = await getApplicationDocumentsDirectory();
+    final fileName =
+        "${DateTime.now().millisecondsSinceEpoch}_${p.basename(picked.path)}";
+    final newPath = p.join(appDir.path, fileName);
+    final copiedFile = await File(picked.path).copy(newPath);
+
+    // 2) Generate thumbnail
+    final thumbPath = await ThumbnailHelper.createThumb(copiedFile.path);
+
+    setState(() {
+      _imagePaths.add(copiedFile.path);
+      _thumbPaths.add(thumbPath);
+    });
   }
 
   @override
@@ -49,9 +82,8 @@ class _EntryPageState extends State<EntryPage> {
   }
 
   Future<void> _save() async {
-    final content = _controller.text.trim().isEmpty
-        ? null
-        : _controller.text.trim();
+    final content =
+    _controller.text.trim().isEmpty ? null : _controller.text.trim();
 
     await JournalRepository.upsert(
       id: _existingEntry?.id,
@@ -59,6 +91,8 @@ class _EntryPageState extends State<EntryPage> {
       date: _entryDate,
       mood: _selectedMood,
       tags: _tags,
+      imagePaths: _imagePaths,
+      thumbPaths: _thumbPaths,
     );
 
     if (!mounted) return;
@@ -69,7 +103,7 @@ class _EntryPageState extends State<EntryPage> {
     final moodOptions = {
       'Awesome!': Icons.sentiment_very_satisfied,
       'Great': Icons.sentiment_satisfied,
-      'Okay': Icons.sentiment_neutral,
+      'Neutral': Icons.sentiment_neutral,
       'Bad': Icons.sentiment_dissatisfied,
       'Terrible...': Icons.sentiment_very_dissatisfied,
     };
@@ -77,7 +111,7 @@ class _EntryPageState extends State<EntryPage> {
     final moodColors = {
       'Awesome!': Colors.green,
       'Great': Colors.orange,
-      'Okay': Colors.grey,
+      'Neutral': Colors.grey,
       'Bad': Colors.blue,
       'Terrible...': Colors.red,
     };
@@ -88,11 +122,11 @@ class _EntryPageState extends State<EntryPage> {
         children: moodOptions.entries
             .map(
               (entry) => ListTile(
-                leading: Icon(entry.value, color: moodColors[entry.key]),
-                title: Text(entry.key),
-                onTap: () => Navigator.pop(ctx, entry.key),
-              ),
-            )
+            leading: Icon(entry.value, color: moodColors[entry.key]),
+            title: Text(entry.key),
+            onTap: () => Navigator.pop(ctx, entry.key),
+          ),
+        )
             .toList(),
       ),
     );
@@ -138,6 +172,24 @@ class _EntryPageState extends State<EntryPage> {
     return months[month - 1];
   }
 
+  Future<void> _removeImageAt(int index) async {
+    try {
+      if (index >= 0 && index < _imagePaths.length) {
+        final f = File(_imagePaths[index]);
+        if (await f.exists()) await f.delete();
+      }
+      if (index >= 0 && index < _thumbPaths.length) {
+        final t = File(_thumbPaths[index]);
+        if (await t.exists()) await t.delete();
+      }
+    } catch (_) {}
+
+    setState(() {
+      _imagePaths.removeAt(index);
+      _thumbPaths.removeAt(index);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final keyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
@@ -170,15 +222,13 @@ class _EntryPageState extends State<EntryPage> {
                 ),
               ),
 
-              // Header with date and AI chat button
+              // Header with date + add image
               Container(
                 decoration: BoxDecoration(
                   color: Theme.of(context).colorScheme.primaryContainer,
                 ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
@@ -195,78 +245,140 @@ class _EntryPageState extends State<EntryPage> {
                             _entryDate = picked;
                             _controller.clear();
                             _existingEntry = null;
-                            _selectedMood = 'Okay';
+                            _selectedMood = 'Neutral';
                             _tags = [];
+                            _imagePaths.clear();
+                            _thumbPaths.clear();
                           });
                           _loadExistingEntry();
                         }
                       },
                       child: Text(
                         getFormattedDate(_entryDate),
-                        style: Theme.of(context).textTheme.titleMedium
+                        style: Theme.of(context)
+                            .textTheme
+                            .titleMedium
                             ?.copyWith(
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onPrimaryContainer,
-                            ),
-                      ),
-                    ),
-                    FilledButton(
-                      onPressed: () {
-                        // TODO: AI chat logic
-                      },
-                      style: FilledButton.styleFrom(
-                        shape: const RoundedRectangleBorder(
-                          borderRadius: BorderRadius.all(Radius.circular(4)),
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimaryContainer,
                         ),
                       ),
-                      child: const Text("AI Chat"),
+                    ),
+                    Row(
+                      children: [
+                        IconButton(
+                          tooltip: "Add Image",
+                          icon: const Icon(
+                              Icons.add_photo_alternate_outlined),
+                          onPressed: _pickImage,
+                        ),
+                        IconButton(
+                          tooltip: "AI Chat",
+                          icon: const Icon(Icons.android),
+                          onPressed: () {},
+                        ),
+                      ],
                     ),
                   ],
                 ),
               ),
 
-              // Text field for content
+              // Text field + thumbs
               Expanded(
                 child: Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerLowest,
+                  color:
+                  Theme.of(context).colorScheme.surfaceContainerLowest,
                   padding: const EdgeInsets.all(16.0),
-                  child: TextField(
-                    controller: _controller,
-                    maxLines: null,
-                    expands: true,
-                    decoration: const InputDecoration.collapsed(
-                      hintText: "Start writing your thoughts...",
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (_thumbPaths.isNotEmpty)
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: List.generate(_thumbPaths.length, (i) {
+                              final thumb = _thumbPaths[i];
+                              // resolve full path (safe guard on index mismatch)
+                              final full = (i < _imagePaths.length)
+                                  ? _imagePaths[i]
+                                  : _imagePaths.isNotEmpty
+                                  ? _imagePaths.first
+                                  : thumb;
+
+                              return Stack(
+                                alignment: Alignment.topRight,
+                                children: [
+                                  GestureDetector(
+                                    onTap: () {
+                                      Navigator.push(
+                                        context,
+                                        MaterialPageRoute(
+                                          builder: (_) =>
+                                              FullImagePage(imagePath: full),
+                                        ),
+                                      );
+                                    },
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(8),
+                                      child: Image.file(
+                                        File(thumb),
+                                        height: 120,
+                                        width: 120,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    icon: const Icon(Icons.close,
+                                        color: Colors.red),
+                                    onPressed: () => _removeImageAt(i),
+                                  ),
+                                ],
+                              );
+                            }),
+                          ),
+                        const SizedBox(height: 12),
+                        TextField(
+                          controller: _controller,
+                          maxLines: null,
+                          decoration: const InputDecoration.collapsed(
+                            hintText: "Start writing your thoughts...",
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
 
-              // Mood + Tags section
+              // Mood + Tags
               if (!keyboardOpen)
                 Column(
                   children: [
                     Divider(
                       height: 1,
                       thickness: 1,
-                      color: Theme.of(context).colorScheme.outlineVariant,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .outlineVariant,
                       indent: 8,
                       endIndent: 8,
                     ),
                     Container(
                       width: double.infinity,
-                      color: Theme.of(
-                        context,
-                      ).colorScheme.surfaceContainerLowest,
+                      color: Theme.of(context)
+                          .colorScheme
+                          .surfaceContainerLowest,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 4,
-                      ),
+                          horizontal: 16, vertical: 4),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment:
+                            MainAxisAlignment.spaceBetween,
                             children: [
                               TextButton.icon(
                                 onPressed: _editTags,
@@ -275,10 +387,9 @@ class _EntryPageState extends State<EntryPage> {
                               ),
                               TextButton.icon(
                                 onPressed: _pickMood,
-                                icon: const Icon(Icons.emoji_emotions_outlined),
-                                label: Text(
-                                  _selectedMood,
-                                ),
+                                icon: const Icon(
+                                    Icons.emoji_emotions_outlined),
+                                label: Text(_selectedMood),
                               ),
                             ],
                           ),
@@ -287,13 +398,15 @@ class _EntryPageState extends State<EntryPage> {
                             Wrap(
                               spacing: 8,
                               runSpacing: -4,
-                              children: _tags.map((t) {
-                                return FilterChip(
+                              children: _tags
+                                  .map(
+                                    (t) => FilterChip(
                                   label: Text(t),
                                   selected: true,
                                   onSelected: (_) => _editTags(),
-                                );
-                              }).toList(),
+                                ),
+                              )
+                                  .toList(),
                             ),
                           const SizedBox(height: 12),
                         ],
@@ -301,36 +414,6 @@ class _EntryPageState extends State<EntryPage> {
                     ),
                   ],
                 ),
-
-              // Bottom row of icons
-              // Padding(
-              //   padding: const EdgeInsets.symmetric(vertical: 4.0),
-              //   child: Row(
-              //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              //     children: [
-              //       IconButton(
-              //         tooltip: 'Font Style',
-              //         onPressed: () {},
-              //         icon: const Icon(Icons.font_download),
-              //       ),
-              //       IconButton(
-              //         tooltip: 'Bulleted List',
-              //         onPressed: () {},
-              //         icon: const Icon(Icons.format_list_bulleted),
-              //       ),
-              //       IconButton(
-              //         tooltip: 'Bold Text',
-              //         onPressed: () {},
-              //         icon: const Icon(Icons.format_bold),
-              //       ),
-              //       IconButton(
-              //         tooltip: 'Insert Image',
-              //         onPressed: () {},
-              //         icon: const Icon(Icons.image),
-              //       ),
-              //     ],
-              //   ),
-              // ),
             ],
           ),
         ),
@@ -377,14 +460,13 @@ class _PredefinedTagPickerState extends State<_PredefinedTagPicker> {
                 children: [
                   Padding(
                     padding: const EdgeInsets.only(left: 8.0),
-                    child: Text(
-                      'Select tags',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
+                    child: Text('Select tags',
+                        style: Theme.of(context).textTheme.titleMedium),
                   ),
                   const Spacer(),
                   FilledButton(
-                    onPressed: () => Navigator.pop(context, _selected.toList()),
+                    onPressed: () =>
+                        Navigator.pop(context, _selected.toList()),
                     child: const Text('Done'),
                   ),
                 ],
@@ -395,9 +477,7 @@ class _PredefinedTagPickerState extends State<_PredefinedTagPicker> {
               child: SingleChildScrollView(
                 controller: controller,
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
+                    horizontal: 12, vertical: 8),
                 child: Wrap(
                   spacing: 8,
                   runSpacing: -4,

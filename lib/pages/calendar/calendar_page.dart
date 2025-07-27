@@ -53,7 +53,7 @@ class _CalendarPageState extends State<CalendarPage> {
         return Colors.green;
       case 'Great':
         return Colors.orange;
-      case 'Okay':
+      case 'Neutral':
         return Colors.grey;
       case 'Bad':
         return Colors.blue;
@@ -96,7 +96,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       width: 1,
                     ),
                   ),
-                  color: Theme.of(context).colorScheme.surfaceContainerLow,
+                  color: Theme.of(context).colorScheme.surface,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(8, 0, 8, 16),
                     child: TableCalendar(
@@ -206,13 +206,6 @@ class _CalendarPageState extends State<CalendarPage> {
                         },
                       ),
                       onDaySelected: _onDaySelected,
-                      onFormatChanged: (format) {
-                        if (_calendarFormat != format) {
-                          setState(() {
-                            _calendarFormat = format;
-                          });
-                        }
-                      },
                       onPageChanged: (focusedDay) {
                         _focusedDay = focusedDay;
                       },
@@ -229,41 +222,46 @@ class _CalendarPageState extends State<CalendarPage> {
                       width: 1,
                     ),
                   ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _selectedEntry?.content?.isNotEmpty == true
-                              ? _selectedEntry!.content!
-                              : "(Empty Entry)",
-                          style: Theme.of(context).textTheme.bodyLarge,
-                        ),
-                        const SizedBox(height: 12),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: FilledButton.icon(
-                            icon: const Icon(Icons.edit, size: 18),
-                            label: const Text("Edit"),
-                            onPressed: () {
-                              final parsedDate = _selectedEntry != null
-                                  ? DateFormat('dd-MM-yyyy').parse(_selectedEntry!.date)
-                                  : _focusedDay;
-
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => EntryPage(
-                                    existingText: _selectedEntry?.content ?? '',
-                                    date: parsedDate,
-                                  ),
-                                ),
-                              ).then((_) => _loadAllEntries());
-                            },
+                  child: Container(
+                    color: Theme.of(context).colorScheme.surface,
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _selectedEntry?.content?.isNotEmpty == true
+                                ? _selectedEntry!.content!
+                                : "(Empty Entry)",
+                            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
                           ),
-                        ),
-                      ],
+                          const SizedBox(height: 12),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: FilledButton.icon(
+                              icon: const Icon(Icons.edit, size: 18),
+                              label: const Text("Edit"),
+                              onPressed: () {
+                                final parsedDate = _selectedEntry != null
+                                    ? DateFormat('dd-MM-yyyy').parse(_selectedEntry!.date)
+                                    : _focusedDay;
+
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => EntryPage(
+                                      existingText: _selectedEntry?.content ?? '',
+                                      date: parsedDate,
+                                    ),
+                                  ),
+                                ).then((_) => _loadAllEntries());
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 )

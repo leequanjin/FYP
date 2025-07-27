@@ -1,7 +1,46 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:moodly/pages/auth/login_page.dart';
+import 'package:moodly/pages/auth/profile_page.dart';
+import 'package:moodly/utils/auth_service.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
+
+  void popPage(BuildContext context) {
+    Navigator.pop(context);
+  }
+
+  void logout(BuildContext context) async {
+    try {
+      await authService.value.signOut();
+      popPage(context);
+    } on FirebaseAuthException catch (e) {
+      print(e.message);
+    }
+  }
+
+  Future<bool?> showLogoutConfirmation(BuildContext context) {
+    return showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Logout'),
+          content: Text('Are you sure you want to log out?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -9,13 +48,24 @@ class SettingsPage extends StatelessWidget {
       children: [
         const SizedBox(height: 24),
         Padding(
-          padding: const EdgeInsets.only(left: 8.0),
+          padding: const EdgeInsets.only(left: 12.0),
           child: Text('GENERAL', style: Theme.of(context).textTheme.labelLarge),
         ),
         const SizedBox(height: 12),
         _buildSectionCard(
           context,
           tiles: [
+            SettingsTile(
+              icon: Icons.person_outlined,
+              title: 'Profile',
+              subtitle: 'View & Edit Personal Information',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const ProfilePage()),
+                );
+              },
+            ),
             SettingsTile(
               icon: Icons.workspace_premium_outlined,
               title: 'Subscription',
@@ -31,9 +81,8 @@ class SettingsPage extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 24),
-
         Padding(
-          padding: const EdgeInsets.only(left: 8.0),
+          padding: const EdgeInsets.only(left: 12.0),
           child: Text('SUPPORT', style: Theme.of(context).textTheme.labelLarge),
         ),
         const SizedBox(height: 12),
@@ -55,7 +104,28 @@ class SettingsPage extends StatelessWidget {
               title: 'About Us',
               onTap: () {},
             ),
-            SettingsTile(icon: Icons.login, title: 'Sign In', onTap: () {}),
+            SettingsTile(
+              icon: Icons.login,
+              title: 'Sign In',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => const LoginPage()),
+                );
+              },
+            ),
+            SettingsTile(
+              icon: Icons.login,
+              title: 'Logout',
+              onTap: () async {
+                {
+                  bool? confirmLogout = await showLogoutConfirmation(context);
+                  if (confirmLogout == true) {
+                    logout(context);
+                  }
+                }
+              },
+            ),
           ],
         ),
       ],
