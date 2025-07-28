@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:moodly/db/tables/tag_table.dart';
 import 'package:moodly/models/JournalEntry.dart';
+import 'package:moodly/pages/home/chat_page.dart';
 import 'package:moodly/pages/image/FullImagePage.dart';
 import 'package:moodly/repositories/journal_repository.dart';
 import 'package:moodly/utils/thumbnail_helper.dart';
@@ -276,7 +277,12 @@ class _EntryPageState extends State<EntryPage> {
                         IconButton(
                           tooltip: "AI Chat",
                           icon: const Icon(Icons.android),
-                          onPressed: () {},
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => const ChatPage()),
+                            );
+                          },
                         ),
                       ],
                     ),
