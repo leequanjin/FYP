@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:moodly/services/gemini_service.dart';
 
 class ChatPage extends StatefulWidget {
@@ -13,7 +14,7 @@ class _ChatPageState extends State<ChatPage> {
   final List<Map<String, String>> _messages = [];
 
   late GeminiService _gemini;
-  final String _apiKey = dotenv.env['API_KEY'];
+  final String _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
 
   @override
   void initState() {
