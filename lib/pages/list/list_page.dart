@@ -33,62 +33,77 @@ class _ListPageState extends State<ListPage> {
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Add Task'),
         content: StatefulBuilder(
           builder: (context, setDialogState) {
             return Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  onChanged: (value) => _task = value,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Task Title',
+                Material(
+                  borderRadius: BorderRadius.circular(8),
+                  child: TextField(
+                    onChanged: (value) => _task = value,
+                    decoration: const InputDecoration(
+                      hintText: 'Task Title',
+                      border: UnderlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Text(
+                const SizedBox(height: 20),
+                Text(
+                  'Due Date',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: _date,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      _date = picked;
+                      setDialogState(() {});
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 20),
+                        const SizedBox(width: 10),
+                        Text(
                           DateFormat('dd-MM-yyyy').format(_date),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                      ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: _date,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          _date = picked;
-                          setDialogState(() {});
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
                   ),
-                  onPressed: () async {
-                    if (_task?.trim().isEmpty ?? true) return;
+                ),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.check),
+                    label: const Text('Add Task'),
+                    onPressed: () async {
+                      if (_task?.trim().isEmpty ?? true) return;
 
-                    await TaskTable.add(_task!.trim(), _date);
-                    Navigator.of(dialogContext).pop();
-                    _loadTasks();
-                  },
-                  child: const Text('Add Task'),
+                      await TaskTable.add(_task!.trim(), _date);
+                      Navigator.of(dialogContext).pop();
+                      _loadTasks();
+                    },
+                  ),
                 ),
               ],
             );
@@ -101,71 +116,87 @@ class _ListPageState extends State<ListPage> {
   void _editTask(Task task) {
     String editedTitle = task.title;
     DateTime editedDate = DateFormat('dd-MM-yyyy').parse(task.date);
+    final titleController = TextEditingController(text: editedTitle);
 
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('Edit Task'),
         content: StatefulBuilder(
           builder: (context, setDialogState) {
             return Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextField(
-                  controller: TextEditingController(text: editedTitle),
-                  onChanged: (value) => editedTitle = value,
-                  decoration: const InputDecoration(
-                    border: OutlineInputBorder(),
-                    hintText: 'Task Title',
+                Material(
+                  borderRadius: BorderRadius.circular(8),
+                  child: TextField(
+                    controller: titleController,
+                    onChanged: (value) => editedTitle = value,
+                    decoration: const InputDecoration(
+                      hintText: 'Task Title',
+                      border: UnderlineInputBorder(),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    ),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.only(left: 8.0),
-                        child: Text(
+                const SizedBox(height: 20),
+                Text(
+                  'Due Date',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  borderRadius: BorderRadius.circular(8),
+                  onTap: () async {
+                    final picked = await showDatePicker(
+                      context: context,
+                      initialDate: editedDate,
+                      firstDate: DateTime(2000),
+                      lastDate: DateTime(2100),
+                    );
+                    if (picked != null) {
+                      editedDate = picked;
+                      setDialogState(() {});
+                    }
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Theme.of(context).dividerColor),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.calendar_today, size: 20),
+                        const SizedBox(width: 10),
+                        Text(
                           DateFormat('dd-MM-yyyy').format(editedDate),
                           style: Theme.of(context).textTheme.bodyMedium,
                         ),
-                      ),
+                      ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.calendar_today),
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: editedDate,
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          editedDate = picked;
-                          setDialogState(() {});
-                        }
-                      },
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                    backgroundColor: Theme.of(context).colorScheme.primary,
                   ),
-                  onPressed: () async {
-                    if (editedTitle.trim().isEmpty) return;
+                ),
+                const SizedBox(height: 24),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: FilledButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('Save Changes'),
+                    onPressed: () async {
+                      if (editedTitle.trim().isEmpty) return;
 
-                    await TaskTable.update(
-                      task.id!,
-                      editedTitle.trim(),
-                      editedDate,
-                    );
-                    Navigator.of(dialogContext).pop();
-                    _loadTasks();
-                  },
-                  child: const Text('Save Changes'),
+                      await TaskTable.update(
+                        task.id!,
+                        editedTitle.trim(),
+                        editedDate,
+                      );
+                      Navigator.of(dialogContext).pop();
+                      _loadTasks();
+                    },
+                  ),
                 ),
               ],
             );

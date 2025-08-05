@@ -29,7 +29,6 @@ class _EntryPageState extends State<EntryPage> {
   String _selectedMood = 'Neutral';
   List<String> _tags = [];
 
-  /// Store both full paths & thumb paths (same indexing)
   final List<String> _imagePaths = [];
   final List<String> _thumbPaths = [];
 
@@ -67,7 +66,6 @@ class _EntryPageState extends State<EntryPage> {
     final newPath = p.join(appDir.path, fileName);
     final copiedFile = await File(picked.path).copy(newPath);
 
-    // 2) Generate thumbnail
     final thumbPath = await ThumbnailHelper.createThumb(copiedFile.path);
 
     setState(() {
@@ -277,11 +275,28 @@ class _EntryPageState extends State<EntryPage> {
                         IconButton(
                           tooltip: "AI Chat",
                           icon: const Icon(Icons.android),
-                          onPressed: () {
-                            Navigator.push(
+                          onPressed: () async {
+                            final summary = await Navigator.push(
                               context,
                               MaterialPageRoute(builder: (_) => const ChatPage()),
                             );
+
+                            if (summary != null && summary is Map<String, dynamic>) {
+                              final text = summary['summary'] as String?;
+                              final mood = summary['mood'] as String?;
+                              final tags = (summary['tags'] as List?)?.cast<String>();
+
+                              setState(() {
+                                final currentText = _controller.text.trim();
+                                if (text != null && text.isNotEmpty) {
+                                  _controller.text = currentText.isEmpty
+                                      ? text
+                                      : "$currentText\n\n$text";
+                                }
+                                if (mood != null && mood.isNotEmpty) _selectedMood = mood;
+                                if (tags != null && tags.isNotEmpty) _tags = tags;
+                              });
+                            }
                           },
                         ),
                       ],

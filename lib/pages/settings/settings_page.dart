@@ -1,7 +1,7 @@
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:moodly/pages/auth/login_page.dart';
-import 'package:moodly/pages/auth/profile_page.dart';
+import 'package:moodly/pages/settings/auth/login_page.dart';
+import 'package:moodly/pages/settings/auth/profile_page.dart';
+import 'package:moodly/pages/settings/theme/theme_picker_page.dart';
 import 'package:moodly/utils/auth_service.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -14,9 +14,19 @@ class SettingsPage extends StatelessWidget {
   void logout(BuildContext context) async {
     try {
       await authService.value.signOut();
-      popPage(context);
-    } on FirebaseAuthException catch (e) {
-      print(e.message);
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("Logged out successfully")),
+        );
+        popPage(context);
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text("Logout failed: $e")),
+        );
+      }
     }
   }
 
@@ -65,7 +75,7 @@ class SettingsPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => user != null ? const ProfilePage() : const LoginPage(),
+                    builder: (_) => const ProfilePage(),
                   ),
                 );
               },
@@ -80,7 +90,12 @@ class SettingsPage extends StatelessWidget {
               icon: Icons.color_lens_outlined,
               title: 'Themes',
               subtitle: 'Customize Color Themes',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ThemePickerPage()),
+                );
+              },
             ),
           ],
         ),

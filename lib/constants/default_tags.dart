@@ -12,5 +12,7 @@ const kDefaultTags = <String>[
   'Relationships',
   'Finance',
   'Idea',
-  'Goal',
+  'Goal'
+  'Food'
+  'Friends',
 ];

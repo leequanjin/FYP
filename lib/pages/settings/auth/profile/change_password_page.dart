@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:moodly/pages/auth/auth_app_bar.dart';
+import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
 import 'package:moodly/utils/auth_service.dart';
 
 class ChangePasswordPage extends StatefulWidget {
@@ -13,7 +13,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
   bool _isPasswordVisible = false;
 
   final TextEditingController _controllerEmail = TextEditingController();
-  final TextEditingController _controllerCurrentPassword = TextEditingController();
+  final TextEditingController _controllerCurrentPassword =
+      TextEditingController();
   final TextEditingController _controllerNewPassword = TextEditingController();
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
@@ -27,26 +28,44 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
 
   void updatePassword() async {
     try {
-      await authService.value.resetPasswordFromCurrentPassword(
-        email: _controllerEmail.text.trim(),
-        currentPassword: _controllerCurrentPassword.text.trim(),
-        newPassword: _controllerNewPassword.text.trim(),
-      );
-      showSnackBarSuccess();
+      if (_controllerCurrentPassword.text.trim() ==
+          _controllerNewPassword.text.trim()) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Current Password & New Password cannot be the same.',
+            ),
+            showCloseIcon: true,
+          ),
+        );
+      } else {
+        await authService.value.resetPasswordFromCurrentPassword(
+          email: _controllerEmail.text.trim(),
+          currentPassword: _controllerCurrentPassword.text.trim(),
+          newPassword: _controllerNewPassword.text.trim(),
+        );
+        showSnackBarSuccess();
+      }
     } catch (e) {
       showSnackBarFailure();
     }
   }
 
-  void showSnackBarSuccess() {
+  void showSnackBarSuccess() async {
     ScaffoldMessenger.of(context).clearMaterialBanners();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
         content: const Text('Password changed successfully.'),
+        duration: Duration(seconds: 1),
         showCloseIcon: true,
       ),
     );
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
   }
 
   void showSnackBarFailure() {
@@ -82,7 +101,11 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.password_outlined, size: 100, color: Theme.of(context).colorScheme.primary),
+                          Icon(
+                            Icons.password_outlined,
+                            size: 100,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
                           _gap(),
                           Text(
                             "Change Password",
@@ -100,16 +123,23 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                           TextFormField(
                             controller: _controllerEmail,
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Please enter your email';
-                              final isValid = RegExp(r"^[a-zA-Z0-9._%+-]+@[a-zA-Z]+\.[a-zA-Z]+").hasMatch(value);
-                              return isValid ? null : 'Please enter a valid email';
+                              if (value == null || value.isEmpty)
+                                return 'Please enter your email';
+                              final isValid = RegExp(
+                                r"^[a-zA-Z0-9._%+-]+@[a-zA-Z]+\.[a-zA-Z]+",
+                              ).hasMatch(value);
+                              return isValid
+                                  ? null
+                                  : 'Please enter a valid email';
                             },
                             decoration: InputDecoration(
                               labelText: 'Email',
                               hintText: 'Enter your email',
                               prefixIcon: const Icon(Icons.email_outlined),
                               border: const OutlineInputBorder(),
-                              fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                              fillColor: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainer,
                             ),
                           ),
                           _gap(),
@@ -117,19 +147,27 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             controller: _controllerCurrentPassword,
                             obscureText: !_isPasswordVisible,
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Please enter your current password';
-                              if (value.length < 6) return 'Password must be at least 6 characters';
+                              if (value == null || value.isEmpty)
+                                return 'Please enter your current password';
+                              if (value.length < 6)
+                                return 'Password must be at least 6 characters';
                               return null;
                             },
                             decoration: InputDecoration(
                               labelText: 'Current Password',
                               hintText: 'Enter your current password',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              prefixIcon: const Icon(
+                                Icons.lock_outline_rounded,
+                              ),
                               border: const OutlineInputBorder(),
-                              fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                              fillColor: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainer,
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                                  _isPasswordVisible
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -144,8 +182,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                             controller: _controllerNewPassword,
                             obscureText: !_isPasswordVisible,
                             validator: (value) {
-                              if (value == null || value.isEmpty) return 'Please enter your new password';
-                              if (value.length < 6) return 'Password must be at least 6 characters';
+                              if (value == null || value.isEmpty)
+                                return 'Please enter your new password';
+                              if (value.length < 6)
+                                return 'Password must be at least 6 characters';
                               return null;
                             },
                             decoration: InputDecoration(
@@ -153,10 +193,14 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                               hintText: 'Enter your new password',
                               prefixIcon: const Icon(Icons.lock_reset_rounded),
                               border: const OutlineInputBorder(),
-                              fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                              fillColor: Theme.of(
+                                context,
+                              ).colorScheme.surfaceContainer,
                               suffixIcon: IconButton(
                                 icon: Icon(
-                                  _isPasswordVisible ? Icons.visibility_off : Icons.visibility,
+                                  _isPasswordVisible
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
                                 ),
                                 onPressed: () {
                                   setState(() {
@@ -176,7 +220,8 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                 ),
                               ),
                               onPressed: () {
-                                if (_formKey.currentState?.validate() ?? false) {
+                                if (_formKey.currentState?.validate() ??
+                                    false) {
                                   updatePassword();
                                 }
                               },
@@ -184,7 +229,10 @@ class _ChangePasswordPageState extends State<ChangePasswordPage> {
                                 padding: EdgeInsets.all(10.0),
                                 child: Text(
                                   'Change Password',
-                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
                             ),

@@ -1,19 +1,19 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:moodly/pages/auth/auth_app_bar.dart';
-import 'package:moodly/pages/auth/auth_layout.dart';
-import 'package:moodly/pages/auth/login_page.dart';
+import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
+import 'package:moodly/pages/settings/auth/auth_layout.dart';
+import 'package:moodly/pages/settings/auth/register_page.dart';
+import 'package:moodly/pages/settings/auth/reset_password_page.dart';
 import 'package:moodly/utils/auth_service.dart';
 
-class RegisterPage extends StatefulWidget {
-  const RegisterPage({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
   @override
-  State<RegisterPage> createState() => _RegisterPageState();
+  State<LoginPage> createState() => _LoginPageState();
 }
 
-class _RegisterPageState extends State<RegisterPage> {
+class _LoginPageState extends State<LoginPage> {
   bool _isPasswordVisible = false;
 
   final TextEditingController _controllerEmail = TextEditingController();
@@ -28,23 +28,28 @@ class _RegisterPageState extends State<RegisterPage> {
     _controllerPassword.dispose();
   }
 
-  void register() async {
+  void signIn() async {
     try {
-      await authService.value.createAccount(
+      await authService.value.signOut();
+
+      await authService.value.signIn(
         email: _controllerEmail.text.trim(),
         password: _controllerPassword.text.trim(),
       );
 
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Login successful!'),
+            duration: const Duration(seconds: 1),
+            showCloseIcon: true,
+          ),
+        );
 
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
-      await userDoc.set({
-        'role': 'user',
-        'points': 0,
-      });
-
+        await Future.delayed(const Duration(seconds: 1));
+      }
       pushReplacementPage();
+
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message ?? 'This is not working';
@@ -62,14 +67,17 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AuthAppBar(titleText: 'User Registration'),
+      appBar: AuthAppBar(titleText: 'User Login'),
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainer,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
+            padding: const EdgeInsets.symmetric(
+              vertical: 16.0,
+              horizontal: 16.0,
+            ),
             child: Form(
               key: _formKey,
               child: Center(
@@ -84,12 +92,12 @@ class _RegisterPageState extends State<RegisterPage> {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.app_registration, size: 100, color: Theme.of(context).colorScheme.primary),
+                          Icon(Icons.login, size: 100, color: Theme.of(context).colorScheme.primary,),
                           _gap(),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Text(
-                              "User Registration",
+                              "User Login",
                               style: Theme.of(context).textTheme.headlineMedium,
                             ),
                           ),
@@ -121,10 +129,9 @@ class _RegisterPageState extends State<RegisterPage> {
                             decoration: InputDecoration(
                               labelText: 'Email',
                               hintText: 'Enter your email',
-                              prefixIcon: const Icon(Icons.email_outlined),
-                              border: const OutlineInputBorder(),
+                              prefixIcon: Icon(Icons.email_outlined),
+                              border: OutlineInputBorder(),
                               fillColor: Theme.of(context).colorScheme.surfaceContainer,
-                              filled: true,
                             ),
                           ),
                           _gap(),
@@ -147,7 +154,6 @@ class _RegisterPageState extends State<RegisterPage> {
                               prefixIcon: const Icon(Icons.lock_outline_rounded),
                               border: const OutlineInputBorder(),
                               fillColor: Theme.of(context).colorScheme.surfaceContainer,
-                              filled: true,
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _isPasswordVisible
@@ -162,10 +168,23 @@ class _RegisterPageState extends State<RegisterPage> {
                               ),
                             ),
                           ),
-                          _gap(),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton(
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => ResetPasswordPage(),
+                                  ),
+                                );
+                              },
+                              child: const Text('Forgot Password?'),
+                            ),
+                          ),
                           Text(
                             errorMessage,
-                            style: const TextStyle(color: Colors.redAccent),
+                            style: TextStyle(color: Colors.redAccent),
                           ),
                           _gap(),
                           SizedBox(
@@ -178,13 +197,13 @@ class _RegisterPageState extends State<RegisterPage> {
                               ),
                               onPressed: () {
                                 if (_formKey.currentState?.validate() ?? false) {
-                                  register();
+                                  signIn();
                                 }
                               },
                               child: const Padding(
                                 padding: EdgeInsets.all(10.0),
                                 child: Text(
-                                  'Register',
+                                  'Login',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -197,15 +216,15 @@ class _RegisterPageState extends State<RegisterPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              const Text("Already have an account? "),
+                              Text("Don't have an account? "),
                               TextButton(
                                 onPressed: () {
                                   Navigator.pushReplacement(
                                     context,
-                                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                                    MaterialPageRoute(builder: (_) => RegisterPage()),
                                   );
                                 },
-                                child: const Text('Login!'),
+                                child: const Text('Sign up!'),
                               ),
                             ],
                           ),

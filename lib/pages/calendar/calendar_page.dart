@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:moodly/db/tables/journal_table.dart';
 import 'package:moodly/models/JournalEntry.dart';
 import 'package:moodly/pages/home/entry_page.dart';
+import 'package:moodly/pages/image/FullImagePage.dart';
 import 'package:table_calendar/table_calendar.dart';
 
 class CalendarPage extends StatefulWidget {
@@ -62,6 +65,14 @@ class _CalendarPageState extends State<CalendarPage> {
       default:
         return Colors.transparent;
     }
+  }
+
+  List<String> _validToShow(JournalEntry entry) {
+    final thumbs = entry.thumbPaths;
+    final src = thumbs.isNotEmpty ? thumbs : entry.imagePaths;
+    return src
+        .where((p) => p.trim().isNotEmpty && File(p).existsSync())
+        .toList();
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -213,7 +224,6 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                // 📝 Entry Card
                 Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
@@ -229,6 +239,48 @@ class _CalendarPageState extends State<CalendarPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          if (_selectedEntry != null && _validToShow(_selectedEntry!).isNotEmpty) ...[
+                            SizedBox(
+                              height: 140,
+                              child: ListView.separated(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: _validToShow(_selectedEntry!).length,
+                                separatorBuilder: (_, __) => const SizedBox(width: 8),
+                                itemBuilder: (context, i) {
+                                  final path = _validToShow(_selectedEntry!)[i];
+                                  final full = _selectedEntry!.imagePaths;
+                                  final thumbs = _selectedEntry!.thumbPaths;
+                                  final showList = (thumbs.isNotEmpty ? thumbs : full);
+                                  final iInShowList = showList.indexOf(path);
+                                  final fullPath = (iInShowList >= 0 && iInShowList < full.length)
+                                      ? full[iInShowList]
+                                      : path;
+
+                                  return ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: GestureDetector(
+                                      onTap: () {
+                                        Navigator.push(
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) => FullImagePage(imagePath: fullPath),
+                                          ),
+                                        );
+                                      },
+                                      child: Image.file(
+                                        File(path),
+                                        width: 160,
+                                        height: 140,
+                                        fit: BoxFit.cover,
+                                      ),
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
+                          const SizedBox(height: 12),
                           Text(
                             _selectedEntry?.content?.isNotEmpty == true
                                 ? _selectedEntry!.content!
@@ -237,7 +289,7 @@ class _CalendarPageState extends State<CalendarPage> {
                               color: Theme.of(context).colorScheme.onSurface,
                             ),
                           ),
-                          const SizedBox(height: 12),
+
                           Align(
                             alignment: Alignment.centerRight,
                             child: FilledButton.icon(
@@ -262,6 +314,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           ),
                         ],
                       ),
+
                     ),
                   ),
                 )

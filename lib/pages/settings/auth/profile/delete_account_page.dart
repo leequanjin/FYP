@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
+import 'package:moodly/pages/settings/auth/auth_layout.dart';
 import 'package:moodly/utils/auth_service.dart';
-import 'package:moodly/pages/auth/auth_app_bar.dart';
 
 class DeleteAccountPage extends StatefulWidget {
   const DeleteAccountPage({super.key});
@@ -29,9 +30,34 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
         email: _controllerEmail.text.trim(),
         password: _controllerPassword.text.trim(),
       );
-      Navigator.pop(context);
+      showSnackBarSuccess();
+      pushReplacementPage();
     } catch (e) {
       showSnackBarFailure();
+    }
+  }
+
+  void pushReplacementPage() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const AuthLayout()),
+    );
+  }
+
+  void showSnackBarSuccess() async {
+    ScaffoldMessenger.of(context).clearMaterialBanners();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Account deleted successfully.'),
+        duration: Duration(seconds: 1),
+        showCloseIcon: true,
+      ),
+    );
+
+    await Future.delayed(const Duration(seconds: 1));
+
+    if (context.mounted) {
+      Navigator.pop(context);
     }
   }
 
@@ -68,7 +94,9 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.delete_forever, size: 100, color: Theme.of(context).colorScheme.error),
+                          Icon(Icons.delete_forever,
+                              size: 100,
+                              color: Theme.of(context).colorScheme.error),
                           _gap(),
                           Text(
                             "Delete Account",
@@ -84,13 +112,14 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                           TextFormField(
                             controller: _controllerEmail,
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
+                              final trimmed = value?.trim() ?? '';
+                              if (trimmed.isEmpty) {
                                 return 'Please enter your email';
                               }
                               final emailRegex = RegExp(
                                 r"^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]+$",
                               );
-                              if (!emailRegex.hasMatch(value)) {
+                              if (!emailRegex.hasMatch(trimmed)) {
                                 return 'Please enter a valid email';
                               }
                               return null;
@@ -107,10 +136,11 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                             controller: _controllerPassword,
                             obscureText: !_isPasswordVisible,
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
+                              final trimmed = value?.trim() ?? '';
+                              if (trimmed.isEmpty) {
                                 return 'Please enter your password';
                               }
-                              if (value.length < 6) {
+                              if (trimmed.length < 6) {
                                 return 'Password must be at least 6 characters';
                               }
                               return null;
@@ -118,7 +148,8 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                             decoration: InputDecoration(
                               labelText: 'Password',
                               hintText: 'Enter your password',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
+                              prefixIcon:
+                              const Icon(Icons.lock_outline_rounded),
                               border: const OutlineInputBorder(),
                               suffixIcon: IconButton(
                                 icon: Icon(
@@ -139,13 +170,15 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                             width: double.infinity,
                             child: FilledButton(
                               style: FilledButton.styleFrom(
-                                backgroundColor: Theme.of(context).colorScheme.error,
+                                backgroundColor:
+                                Theme.of(context).colorScheme.error,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                               ),
                               onPressed: () {
-                                if (_formKey.currentState?.validate() ?? false) {
+                                if (_formKey.currentState?.validate() ??
+                                    false) {
                                   deleteAccount();
                                 }
                               },
@@ -154,7 +187,8 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
                                 child: Text(
                                   'Delete Account',
                                   style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onError,
+                                    color:
+                                    Theme.of(context).colorScheme.onError,
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
                                   ),

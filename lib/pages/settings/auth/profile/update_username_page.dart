@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
 import 'package:moodly/utils/auth_service.dart';
-import 'package:moodly/pages/auth/auth_app_bar.dart';
 
 class UpdateUsernamePage extends StatefulWidget {
   const UpdateUsernamePage({super.key});
@@ -35,7 +35,6 @@ class _UpdateUsernamePageState extends State<UpdateUsernamePage> {
     ScaffoldMessenger.of(context).clearMaterialBanners();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Theme.of(context).colorScheme.primary,
         content: const Text('Username changed successfully.'),
         showCloseIcon: true,
       ),

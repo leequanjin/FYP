@@ -1,6 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:moodly/pages/auth/auth_app_bar.dart';
+import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
 import 'package:moodly/utils/auth_service.dart';
 
 class ResetPasswordPage extends StatefulWidget {

@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:moodly/pages/auth/auth_app_bar.dart';
-import 'package:moodly/pages/auth/change_password_page.dart';
-import 'package:moodly/pages/auth/delete_account_page.dart';
-import 'package:moodly/pages/auth/update_username_page.dart';
+import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
+import 'package:moodly/pages/settings/auth/login_page.dart';
+import 'package:moodly/pages/settings/auth/profile/delete_account_page.dart';
 import 'package:moodly/utils/auth_service.dart';
+
+import 'profile/change_password_page.dart';
+import 'profile/update_username_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -17,6 +19,10 @@ class _ProfilePageState extends State<ProfilePage> {
   Widget build(BuildContext context) {
     final user = authService.value.currentUser;
 
+    if (user == null) {
+      return const LoginPage();
+    }
+
     return Scaffold(
       appBar: AuthAppBar(titleText: 'Profile'),
       body: SafeArea(
@@ -29,8 +35,8 @@ class _ProfilePageState extends State<ProfilePage> {
             children: [
               _buildUserInfoCard(
                 context,
-                user?.displayName ?? 'Unknown',
-                user?.email ?? 'No Email',
+                user.displayName ?? 'Username',
+                user.email ?? 'No Email',
               ),
               const SizedBox(height: 24),
               Text(
@@ -91,10 +97,10 @@ class _ProfilePageState extends State<ProfilePage> {
   }
 
   Widget _buildUserInfoCard(
-    BuildContext context,
-    String username,
-    String email,
-  ) {
+      BuildContext context,
+      String username,
+      String email,
+      ) {
     return Card(
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
@@ -106,18 +112,35 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            const SizedBox(height: 12),
-            Text(
-              username,
-              style: Theme.of(
-                context,
-              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+            const CircleAvatar(
+              radius: 28,
+              child: Icon(Icons.person, size: 32),
             ),
-            const SizedBox(height: 4),
-            Text(email, style: Theme.of(context).textTheme.bodyMedium),
+            const SizedBox(width: 16),
+            Padding(
+              padding: const EdgeInsets.only(left: 2.0),
+              child: Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      username,
+                      style: Theme.of(context)
+                          .textTheme
+                          .titleLarge
+                          ?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      email,
+                      style: Theme.of(context).textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            ),
           ],
         ),
       ),

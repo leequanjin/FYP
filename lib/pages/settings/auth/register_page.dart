@@ -1,20 +1,18 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:moodly/pages/auth/auth_app_bar.dart';
-import 'package:moodly/pages/auth/auth_layout.dart';
-import 'package:moodly/pages/auth/register_page.dart';
-import 'package:moodly/pages/auth/reset_password_page.dart';
+import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
+import 'package:moodly/pages/settings/auth/auth_layout.dart';
+import 'package:moodly/pages/settings/auth/login_page.dart';
 import 'package:moodly/utils/auth_service.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({super.key});
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  State<RegisterPage> createState() => _RegisterPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _RegisterPageState extends State<RegisterPage> {
   bool _isPasswordVisible = false;
 
   final TextEditingController _controllerEmail = TextEditingController();
@@ -29,30 +27,26 @@ class _LoginPageState extends State<LoginPage> {
     _controllerPassword.dispose();
   }
 
-  void signIn() async {
+  void register() async {
     try {
-      await authService.value.signOut();
-
-      await authService.value.signIn(
+      await authService.value.createAccount(
         email: _controllerEmail.text.trim(),
         password: _controllerPassword.text.trim(),
       );
 
-      final uid = FirebaseAuth.instance.currentUser?.uid;
-      if (uid == null) return;
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Register successful!'),
+            duration: const Duration(seconds: 1),
+            showCloseIcon: true,
+          ),
+        );
 
-      final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
-      final snapshot = await userDoc.get();
-
-      if (snapshot.exists && snapshot.data()?['role'] == 'user') {
-        pushReplacementPage();
-
-      } else {
-        await authService.value.signOut();
-        setState(() {
-          errorMessage = 'Access denied: Invalid role';
-        });
+        await Future.delayed(const Duration(seconds: 1));
       }
+      pushReplacementPage();
+
     } on FirebaseAuthException catch (e) {
       setState(() {
         errorMessage = e.message ?? 'This is not working';
@@ -70,17 +64,14 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AuthAppBar(titleText: 'User Login'),
+      appBar: AuthAppBar(titleText: 'User Registration'),
       body: SafeArea(
         child: Container(
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surfaceContainer,
           ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              vertical: 16.0,
-              horizontal: 16.0,
-            ),
+            padding: const EdgeInsets.symmetric(vertical: 16.0, horizontal: 16.0),
             child: Form(
               key: _formKey,
               child: Center(
@@ -95,12 +86,12 @@ class _LoginPageState extends State<LoginPage> {
                         mainAxisSize: MainAxisSize.min,
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.login, size: 100, color: Theme.of(context).colorScheme.primary,),
+                          Icon(Icons.app_registration, size: 100, color: Theme.of(context).colorScheme.primary),
                           _gap(),
                           Padding(
                             padding: const EdgeInsets.symmetric(horizontal: 16.0),
                             child: Text(
-                              "User Login",
+                              "User Registration",
                               style: Theme.of(context).textTheme.headlineMedium,
                             ),
                           ),
@@ -132,9 +123,10 @@ class _LoginPageState extends State<LoginPage> {
                             decoration: InputDecoration(
                               labelText: 'Email',
                               hintText: 'Enter your email',
-                              prefixIcon: Icon(Icons.email_outlined),
-                              border: OutlineInputBorder(),
+                              prefixIcon: const Icon(Icons.email_outlined),
+                              border: const OutlineInputBorder(),
                               fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                              filled: true,
                             ),
                           ),
                           _gap(),
@@ -157,6 +149,7 @@ class _LoginPageState extends State<LoginPage> {
                               prefixIcon: const Icon(Icons.lock_outline_rounded),
                               border: const OutlineInputBorder(),
                               fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                              filled: true,
                               suffixIcon: IconButton(
                                 icon: Icon(
                                   _isPasswordVisible
@@ -171,23 +164,10 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                           ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (_) => ResetPasswordPage(),
-                                  ),
-                                );
-                              },
-                              child: const Text('Forgot Password?'),
-                            ),
-                          ),
+                          _gap(),
                           Text(
                             errorMessage,
-                            style: TextStyle(color: Colors.redAccent),
+                            style: const TextStyle(color: Colors.redAccent),
                           ),
                           _gap(),
                           SizedBox(
@@ -200,13 +180,13 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                               onPressed: () {
                                 if (_formKey.currentState?.validate() ?? false) {
-                                  signIn();
+                                  register();
                                 }
                               },
                               child: const Padding(
                                 padding: EdgeInsets.all(10.0),
                                 child: Text(
-                                  'Login',
+                                  'Register',
                                   style: TextStyle(
                                     fontSize: 16,
                                     fontWeight: FontWeight.bold,
@@ -219,15 +199,15 @@ class _LoginPageState extends State<LoginPage> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Text("Don't have an account? "),
+                              const Text("Already have an account? "),
                               TextButton(
                                 onPressed: () {
                                   Navigator.pushReplacement(
                                     context,
-                                    MaterialPageRoute(builder: (_) => RegisterPage()),
+                                    MaterialPageRoute(builder: (_) => const LoginPage()),
                                   );
                                 },
-                                child: const Text('Sign up!'),
+                                child: const Text('Login!'),
                               ),
                             ],
                           ),
