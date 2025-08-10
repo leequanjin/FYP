@@ -109,9 +109,9 @@ class _EntryPageState extends State<EntryPage> {
 
     final moodColors = {
       'Awesome!': Colors.green,
-      'Great': Colors.orange,
-      'Neutral': Colors.grey,
-      'Bad': Colors.blue,
+      'Great': Colors.lightGreen,
+      'Neutral': Colors.blue,
+      'Bad': Colors.orange,
       'Terrible...': Colors.red,
     };
 

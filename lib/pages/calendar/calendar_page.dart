@@ -55,11 +55,11 @@ class _CalendarPageState extends State<CalendarPage> {
       case 'Awesome!':
         return Colors.green;
       case 'Great':
-        return Colors.orange;
+        return Colors.lightGreen;
       case 'Neutral':
-        return Colors.grey;
-      case 'Bad':
         return Colors.blue;
+      case 'Bad':
+        return Colors.orange;
       case 'Terrible...':
         return Colors.red;
       default:

@@ -345,6 +345,7 @@ class TodoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Card(
       margin: const EdgeInsets.symmetric(vertical: 2.0, horizontal: 8.0),
+      color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(4),
         side: BorderSide(
@@ -356,7 +357,6 @@ class TodoCard extends StatelessWidget {
         children: [
           Container(
             width: 6,
-            color: Theme.of(context).colorScheme.primaryContainer,
           ),
           Expanded(
             child: ListTile(
