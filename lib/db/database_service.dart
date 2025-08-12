@@ -1,4 +1,3 @@
-// lib/db/database_service.dart
 import 'package:moodly/constants/default_tags.dart';
 import 'package:moodly/db/tables/journal_table.dart';
 import 'package:moodly/db/tables/journal_tag_table.dart';

@@ -21,6 +21,7 @@ class _StatsPageState extends State<StatsPage> {
 
   Map<String, int> moodCounts = {};
   int? touchedIndex;
+  int? highlightedIndex;
   List<dynamic> _allEntries = [];
   List<int> _years = [];
   int? _selectedYear;
@@ -87,42 +88,67 @@ class _StatsPageState extends State<StatsPage> {
             child: Center(child: CircularProgressIndicator()),
           )
               : Expanded(
-            child: Column(
-              children: [
-                Text(
-                  "Mood Distribution",
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(
+                    "Mood Distribution",
+                    style: Theme.of(context).textTheme.titleLarge
+                        ?.copyWith(fontWeight: FontWeight.bold),
                   ),
-                ),
-                const SizedBox(height: 20),
-                Expanded(
-                  child: PieChart(
-                    PieChartData(
-                      sectionsSpace: 2,
-                      centerSpaceRadius: 50,
-                      borderData: FlBorderData(show: false),
-                      sections: _buildPieSections(total),
-                      pieTouchData: PieTouchData(
-                        touchCallback: (event, response) {
-                          if (!event.isInterestedForInteractions ||
-                              response == null ||
-                              response.touchedSection == null) {
-                            setState(() => touchedIndex = null);
-                            return;
-                          }
-                          setState(() {
-                            touchedIndex = response.touchedSection!
+                  const SizedBox(height: 20),
+                  SizedBox(
+                    height: 250,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 50,
+                        borderData: FlBorderData(show: false),
+                        sections: _buildPieSections(total),
+                        pieTouchData: PieTouchData(
+                          touchCallback: (event, response) {
+                            if (response == null ||
+                                response.touchedSection == null) {
+                              setState(() {
+                                touchedIndex = null;
+                                highlightedIndex = null;
+                              });
+                              return;
+                            }
+
+                            final index = response
+                                .touchedSection!
                                 .touchedSectionIndex;
-                          });
-                        },
+
+                            if (event is FlLongPressStart ||
+                                event is FlLongPressMoveUpdate ||
+                                event is FlPanUpdateEvent) {
+                              setState(() {
+                                highlightedIndex = index;
+                              });
+                            } else if (event is FlLongPressEnd ||
+                                event is FlPanEndEvent ||
+                                event is FlTapUpEvent) {
+                              setState(() {
+                                highlightedIndex = null;
+                              });
+                            }
+
+                            if (event.isInterestedForInteractions) {
+                              setState(() {
+                                touchedIndex = index;
+                              });
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                _buildLegend(total),
-              ],
+                  const SizedBox(height: 20),
+                  _buildLegend(total),
+                ],
+              ),
             ),
           ),
         ],
@@ -145,13 +171,15 @@ class _StatsPageState extends State<StatsPage> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ),
-              ..._years.map((year) => DropdownMenuItem(
-                value: year,
-                child: Text(
-                  year.toString(),
-                  style: const TextStyle(fontWeight: FontWeight.normal),
+              ..._years.map(
+                    (year) => DropdownMenuItem(
+                  value: year,
+                  child: Text(
+                    year.toString(),
+                    style: const TextStyle(fontWeight: FontWeight.normal),
+                  ),
                 ),
-              )),
+              ),
             ],
             onChanged: (value) {
               setState(() {
@@ -170,9 +198,12 @@ class _StatsPageState extends State<StatsPage> {
             items: [
               DropdownMenuItem(
                 value: null,
-                child: const Text(
+                child: Text(
                   "All Months",
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: _selectedYear == null ? Colors.grey : null,
+                  ),
                 ),
               ),
               ...List.generate(12, (i) {
@@ -255,12 +286,15 @@ class _StatsPageState extends State<StatsPage> {
       children: List.generate(moods.length, (index) {
         final count = moodCounts[moods[index]] ?? 0;
         final percentage = total == 0 ? 0 : (count / total) * 100;
+        final isHighlighted = highlightedIndex == index;
 
         return Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.surface,
+            color: isHighlighted
+                ? Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1)
+                : Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(8),
             border: Border.all(
               color: Theme.of(context).colorScheme.outlineVariant,
