@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moodly/pages/settings/auth/login_page.dart';
 import 'package:moodly/pages/settings/auth/profile_page.dart';
+import 'package:moodly/pages/settings/backup/BackupRestorePage.dart';
 import 'package:moodly/pages/settings/theme/theme_picker_page.dart';
 import 'package:moodly/utils/auth_service.dart';
 
@@ -94,6 +95,17 @@ class SettingsPage extends StatelessWidget {
                 Navigator.push(
                   context,
                   MaterialPageRoute(builder: (_) => const ThemePickerPage()),
+                );
+              },
+            ),
+            SettingsTile(
+              icon: Icons.backup_outlined,
+              title: 'Backup & Restore',
+              subtitle: 'Backup & Restore User Data',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BackupRestorePage()),
                 );
               },
             ),

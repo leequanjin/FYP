@@ -46,4 +46,9 @@ class JournalTagTable {
     );
     return res.map((e) => e[columnTagId] as int).toList();
   }
+
+  static Future<void> clearAll() async {
+    final db = await DatabaseService.instance.database;
+    await db.delete('journal_tags');
+  }
 }

@@ -1,4 +1,3 @@
-// lib/db/tables/journal_table.dart
 import 'package:intl/intl.dart';
 import 'package:moodly/db/database_service.dart';
 import 'package:moodly/models/JournalEntry.dart';
@@ -42,6 +41,24 @@ class JournalTable {
       columnThumbs: thumbPaths.join(','),
     });
   }
+
+  static Future<void> addISO(
+      String? content,
+      String dateStr,
+      String? selectedMood,
+      List<String> imagePaths,
+      List<String> thumbPaths,
+      ) async {
+    final db = await DatabaseService.instance.database;
+    await db.insert(tableName, {
+      columnContent: content,
+      columnDate: dateStr,
+      columnMood: selectedMood ?? 'Neutral',
+      columnImages: imagePaths.join(','),
+      columnThumbs: thumbPaths.join(','),
+    });
+  }
+
 
   static Future<List<JournalEntry>> getAll() async {
     final db = await DatabaseService.instance.database;
@@ -95,5 +112,24 @@ class JournalTable {
     } else {
       return null;
     }
+  }
+
+  static Future<void> clearAll() async {
+    final db = await DatabaseService.instance.database;
+    await db.delete('journals');
+  }
+
+  static Future<JournalEntry?> getLastInserted() async {
+    final db = await DatabaseService.instance.database;
+    final result = await db.query(
+      'journals',
+      orderBy: 'id DESC',
+      limit: 1,
+    );
+
+    if (result.isNotEmpty) {
+      return JournalEntry.fromMap(result.first);
+    }
+    return null;
   }
 }
