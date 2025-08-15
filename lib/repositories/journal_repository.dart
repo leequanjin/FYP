@@ -1,10 +1,16 @@
-import 'package:flutter/cupertino.dart';
+import 'dart:io';
+
+import 'package:firebase_storage/firebase_storage.dart' hide Task;
 import 'package:moodly/db/tables/journal_table.dart';
 import 'package:moodly/db/tables/journal_tag_table.dart';
 import 'package:moodly/db/tables/tag_table.dart';
+import 'package:moodly/db/tables/task_table.dart';
 import 'package:moodly/models/JournalEntry.dart';
+import 'package:moodly/models/Task.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 
 class JournalRepository {
   /// Create or update a journal entry with tags
@@ -30,20 +36,20 @@ class JournalRepository {
       await JournalTagTable.replaceTags(inserted!.id!, tagIds);
     } else {
       // Update existing
-      await JournalTable.update(id, content, date, mood, imagePaths, thumbPaths);
+      await JournalTable.update(
+        id,
+        content,
+        date,
+        mood,
+        imagePaths,
+        thumbPaths,
+      );
 
       final tagIds = <int>[];
       for (final t in tags) {
         tagIds.add(await TagTable.ensure(t));
       }
       await JournalTagTable.replaceTags(id, tagIds);
-    }
-
-    // Optional: automatically backup to Firestore after every upsert
-    try {
-      await backupToFirestore();
-    } catch (e) {
-      debugPrint("Firestore backup failed: $e");
     }
   }
 
@@ -57,17 +63,14 @@ class JournalRepository {
       final tagIds = await JournalTagTable.getTagIdsForJournal(e.id!);
       final tagNames = await TagTable.getTagsForIds(tagIds);
       result.add(
-        JournalEntry.fromMap(
-          {
-            'id': e.id,
-            'content': e.content,
-            'date': e.date,
-            'mood': e.mood,
-            'images': e.imagePaths.join(','),
-            'thumbs': e.thumbPaths.join(','),
-          },
-          tags: tagNames,
-        ),
+        JournalEntry.fromMap({
+          'id': e.id,
+          'content': e.content,
+          'date': e.date,
+          'mood': e.mood,
+          'images': e.imagePaths.join(','),
+          'thumbs': e.thumbPaths.join(','),
+        }, tags: tagNames),
       );
     }
     return result;
@@ -81,86 +84,168 @@ class JournalRepository {
     final tagIds = await JournalTagTable.getTagIdsForJournal(entry.id!);
     final tagNames = await TagTable.getTagsForIds(tagIds);
 
-    return JournalEntry.fromMap(
-      {
-        'id': entry.id,
-        'content': entry.content,
-        'date': entry.date,
-        'mood': entry.mood,
-        'images': entry.imagePaths.join(','),
-        'thumbs': entry.thumbPaths.join(','),
-      },
-      tags: tagNames,
-    );
+    return JournalEntry.fromMap({
+      'id': entry.id,
+      'content': entry.content,
+      'date': entry.date,
+      'mood': entry.mood,
+      'images': entry.imagePaths.join(','),
+      'thumbs': entry.thumbPaths.join(','),
+    }, tags: tagNames);
   }
 
-  /// Backup all journal entries to Firestore
+  static Future<void> _deleteFolderContents(Reference folderRef) async {
+    final listResult = await folderRef.listAll();
+
+    // Delete all files in this folder
+    for (final item in listResult.items) {
+      await item.delete();
+    }
+
+    // Recursively delete files in subfolders
+    for (final subfolder in listResult.prefixes) {
+      await _deleteFolderContents(subfolder);
+    }
+  }
+
   static Future<void> backupToFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("User not signed in.");
+    final uid = user.uid;
 
+    final storage = FirebaseStorage.instance;
+
+    // ---------- 1. Delete old storage images ----------
+    await _deleteFolderContents(storage.ref('backups/$uid'));
+
+    // ---------- 2. Delete old Firestore backup ----------
+    final backupRef = FirebaseFirestore.instance.collection('backups').doc(uid);
+    await backupRef.delete().catchError((_) {});
+
+    // ---------- 3. Prepare journal entries ----------
     final entries = await getAll();
-    final backupRef = FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('journal_backup');
+    final journalData = <Map<String, dynamic>>[];
 
-    // 1️⃣ Remove all old backups first
-    final oldDocs = await backupRef.get();
-    for (final doc in oldDocs.docs) {
-      await doc.reference.delete();
-    }
-
-    if (entries.isEmpty) return;
-
-    // 2️⃣ Write fresh backup
-    final batch = FirebaseFirestore.instance.batch();
     for (final entry in entries) {
-      final docRef = backupRef.doc(entry.id.toString());
-      batch.set(docRef, entry.toBackupMap());
+      final entryId = entry.id?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString();
+
+      // Upload images -> return filename
+      final updatedImages = <String>[];
+      for (final imgPath in entry.imagePaths) {
+        if (imgPath.isNotEmpty && File(imgPath).existsSync()) {
+          final ext = path.extension(imgPath);
+          final uniqueName = '${DateTime.now().millisecondsSinceEpoch}_${path.basenameWithoutExtension(imgPath)}$ext';
+          await storage
+              .ref('backups/$uid/images/$entryId/$uniqueName')
+              .putFile(File(imgPath));
+          updatedImages.add(uniqueName);
+        }
+      }
+
+      // Upload thumbs -> return filename
+      final updatedThumbs = <String>[];
+      for (final thumbPath in entry.thumbPaths) {
+        if (thumbPath.isNotEmpty && File(thumbPath).existsSync()) {
+          final ext = path.extension(thumbPath);
+          final uniqueName = '${DateTime.now().millisecondsSinceEpoch}_${path.basenameWithoutExtension(thumbPath)}$ext';
+          await storage
+              .ref('backups/$uid/thumbs/$entryId/$uniqueName')
+              .putFile(File(thumbPath));
+          updatedThumbs.add(uniqueName);
+        }
+      }
+
+      journalData.add(JournalEntry(
+        id: entry.id,
+        content: entry.content,
+        date: entry.date,
+        mood: entry.mood,
+        tags: entry.tags,
+        imagePaths: updatedImages,
+        thumbPaths: updatedThumbs,
+      ).toBackupMap());
     }
-    await batch.commit();
+
+    // ---------- 4. Prepare tasks ----------
+    final todos = await TaskTable.getAll();
+    final todoData = todos.map((t) => t.toBackupMap()).toList();
+
+    // ---------- 5. Save single backup document ----------
+    await backupRef.set({
+      'journals': journalData,
+      'tasks': todoData,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
   }
 
-  /// Restore all journal entries from Firestore
   static Future<void> restoreFromFirestore() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) throw Exception("User not signed in.");
+    final uid = user.uid;
+    final storage = FirebaseStorage.instance;
 
-    final snapshot = await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user.uid)
-        .collection('journal_backup')
-        .get();
+    // 1. Clear local images
+    final appDir = await getApplicationDocumentsDirectory();
+    for (var file in Directory(appDir.path).listSync()) {
+      if (file is File) file.deleteSync();
+    }
 
-    if (snapshot.docs.isEmpty) return;
+    // 2. Fetch backup doc
+    final docSnap = await FirebaseFirestore.instance.collection('backups').doc(uid).get();
+    if (!docSnap.exists) return;
+    final data = docSnap.data()!;
 
-    // Optional: clear local DB before restore
+    // 3. Restore journals
     await JournalTable.clearAll();
     await JournalTagTable.clearAll();
+    if (data['journals'] != null) {
+      for (final j in List<Map<String, dynamic>>.from(data['journals'])) {
+        final entry = JournalEntry.fromBackupMap(j);
 
-    for (final doc in snapshot.docs) {
-      final data = doc.data();
-      final entry = JournalEntry.fromBackupMap(data);
-
-      // Insert fresh
-      await JournalTable.addISO(
-        entry.content,
-        entry.date,
-        entry.mood,
-        entry.imagePaths,
-        entry.thumbPaths,
-      );
-
-      final inserted = await JournalTable.getLastInserted();
-      if (inserted?.id != null) {
-        final tagIds = <int>[];
-        for (final t in entry.tags) {
-          tagIds.add(await TagTable.ensure(t));
+        // Download images
+        final localImages = <String>[];
+        for (final filename in entry.imagePaths) {
+          final ref = storage.ref('backups/$uid/images/${entry.id}/$filename');
+          final localFile = File('${appDir.path}/$filename');
+          await ref.writeToFile(localFile);
+          localImages.add(localFile.path);
         }
-        await JournalTagTable.replaceTags(inserted!.id!, tagIds);
+
+        // Download thumbs
+        final localThumbs = <String>[];
+        for (final filename in entry.thumbPaths) {
+          final ref = storage.ref('backups/$uid/thumbs/${entry.id}/$filename');
+          final localFile = File('${appDir.path}/$filename');
+          await ref.writeToFile(localFile);
+          localThumbs.add(localFile.path);
+        }
+
+        await JournalTable.addISO(
+          entry.content,
+          entry.date,
+          entry.mood,
+          localImages,
+          localThumbs,
+        );
+
+        final inserted = await JournalTable.getLastInserted();
+        if (inserted?.id != null) {
+          final tagIds = <int>[];
+          for (final t in entry.tags) {
+            tagIds.add(await TagTable.ensure(t));
+          }
+          await JournalTagTable.replaceTags(inserted!.id!, tagIds);
+        }
+      }
+    }
+
+    // 4. Restore tasks
+    await TaskTable.clearAll();
+    if (data['tasks'] != null) {
+      for (final t in List<Map<String, dynamic>>.from(data['tasks'])) {
+        final task = Task.fromBackupMap(t);
+        await TaskTable.addISO(task.title, task.date, task.status);
       }
     }
   }
-
 }

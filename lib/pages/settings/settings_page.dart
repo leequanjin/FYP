@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moodly/pages/settings/auth/login_page.dart';
 import 'package:moodly/pages/settings/auth/profile_page.dart';
 import 'package:moodly/pages/settings/backup/BackupRestorePage.dart';
+import 'package:moodly/pages/settings/subscription/subscription_page.dart';
 import 'package:moodly/pages/settings/theme/theme_picker_page.dart';
 import 'package:moodly/utils/auth_service.dart';
 
@@ -24,9 +25,9 @@ class SettingsPage extends StatelessWidget {
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text("Logout failed: $e")),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text("Logout failed: $e")));
       }
     }
   }
@@ -75,9 +76,7 @@ class SettingsPage extends StatelessWidget {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => const ProfilePage(),
-                  ),
+                  MaterialPageRoute(builder: (_) => const ProfilePage()),
                 );
               },
             ),
@@ -85,7 +84,12 @@ class SettingsPage extends StatelessWidget {
               icon: Icons.workspace_premium_outlined,
               title: 'Subscription',
               subtitle: 'Purchase Subscription Plan',
-              onTap: () {},
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const SubscriptionPage()),
+                );
+              },
             ),
             SettingsTile(
               icon: Icons.color_lens_outlined,
@@ -164,9 +168,9 @@ class SettingsPage extends StatelessWidget {
   }
 
   Widget _buildSectionCard(
-      BuildContext context, {
-        required List<SettingsTile> tiles,
-      }) {
+    BuildContext context, {
+    required List<SettingsTile> tiles,
+  }) {
     return Card(
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(

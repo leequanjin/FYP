@@ -5,34 +5,47 @@ import '../database_service.dart';
 
 class TaskTable {
   static const tableName = "tasks";
+  static const columnId = "id";
+  static const columnTitle = "title";
+  static const columnDate = "date";
+  static const columnStatus = "status";
 
   static Future<void> createTable(Database db) async {
     await db.execute('''
       CREATE TABLE $tableName (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        title TEXT NOT NULL,
-        date TEXT,
-        status INTEGER NOT NULL
+        $columnId INTEGER PRIMARY KEY AUTOINCREMENT,
+        $columnTitle TEXT NOT NULL,
+        $columnDate TEXT,
+        $columnStatus INTEGER NOT NULL
       )
     ''');
   }
 
+  /// Add a task using a DateTime (formats to dd-MM-yyyy)
   static Future<void> add(String title, DateTime date) async {
     final db = await DatabaseService.instance.database;
-
     final task = Task(
       title: title,
       date: DateFormat('dd-MM-yyyy').format(date),
       status: 0,
     );
+    await db.insert(tableName, task.toMap());
+  }
 
+  /// Add a task using a raw date string (used for restore from backup)
+  static Future<void> addISO(String title, String dateStr, int status) async {
+    final db = await DatabaseService.instance.database;
+    final task = Task(
+      title: title,
+      date: dateStr,
+      status: status,
+    );
     await db.insert(tableName, task.toMap());
   }
 
   static Future<List<Task>> getAll() async {
     final db = await DatabaseService.instance.database;
     final data = await db.query(tableName);
-
     return data.map((e) => Task.fromMap(e)).toList();
   }
 
@@ -40,8 +53,8 @@ class TaskTable {
     final db = await DatabaseService.instance.database;
     await db.update(
       tableName,
-      {'status': status},
-      where: 'id = ?',
+      {columnStatus: status},
+      where: '$columnId = ?',
       whereArgs: [id],
     );
   }
@@ -49,17 +62,27 @@ class TaskTable {
   static Future<void> update(int id, String title, DateTime date) async {
     final db = await DatabaseService.instance.database;
 
+    // Keep existing status instead of resetting to 0
+    final existing = await db.query(
+      tableName,
+      columns: [columnStatus],
+      where: '$columnId = ?',
+      whereArgs: [id],
+    );
+    final currentStatus =
+    existing.isNotEmpty ? existing.first[columnStatus] as int : 0;
+
     final updatedTask = Task(
       id: id,
       title: title,
       date: DateFormat('dd-MM-yyyy').format(date),
-      status: 0, // Optional: retain current status or retrieve first
+      status: currentStatus,
     );
 
     await db.update(
       tableName,
       updatedTask.toMap(),
-      where: 'id = ?',
+      where: '$columnId = ?',
       whereArgs: [id],
     );
   }
@@ -68,8 +91,28 @@ class TaskTable {
     final db = await DatabaseService.instance.database;
     await db.delete(
       tableName,
-      where: 'id = ?',
+      where: '$columnId = ?',
       whereArgs: [id],
     );
+  }
+
+  /// Clear all tasks (used for restore)
+  static Future<void> clearAll() async {
+    final db = await DatabaseService.instance.database;
+    await db.delete(tableName);
+  }
+
+  /// Get the last inserted task (optional helper)
+  static Future<Task?> getLastInserted() async {
+    final db = await DatabaseService.instance.database;
+    final result = await db.query(
+      tableName,
+      orderBy: '$columnId DESC',
+      limit: 1,
+    );
+    if (result.isNotEmpty) {
+      return Task.fromMap(result.first);
+    }
+    return null;
   }
 }

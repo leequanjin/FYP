@@ -3,6 +3,7 @@ import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
 import 'package:moodly/pages/settings/auth/login_page.dart';
 import 'package:moodly/pages/settings/auth/profile/delete_account_page.dart';
 import 'package:moodly/utils/auth_service.dart';
+import 'package:moodly/utils/user_service.dart';
 
 import 'profile/change_password_page.dart';
 import 'profile/update_username_page.dart';
@@ -96,11 +97,29 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _loadTier();
+  }
+
+  String _tierLabel = "Loading...";
+  DateTime? _expiryDate;
+
+  Future<void> _loadTier() async {
+    final premium = await UserService.isPremiumUser();
+    final expiry = await UserService.getPremiumExpiry();
+    setState(() {
+      _tierLabel = premium ? "Premium" : "Free";
+      _expiryDate = expiry;
+    });
+  }
+
   Widget _buildUserInfoCard(
-      BuildContext context,
-      String username,
-      String email,
-      ) {
+    BuildContext context,
+    String username,
+    String email,
+  ) {
     return Card(
       color: Theme.of(context).colorScheme.surface,
       shape: RoundedRectangleBorder(
@@ -114,31 +133,27 @@ class _ProfilePageState extends State<ProfilePage> {
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         child: Row(
           children: [
-            const CircleAvatar(
-              radius: 28,
-              child: Icon(Icons.person, size: 32),
-            ),
+            const CircleAvatar(radius: 28, child: Icon(Icons.person, size: 32)),
             const SizedBox(width: 16),
-            Padding(
-              padding: const EdgeInsets.only(left: 2.0),
-              child: Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      username,
-                      style: Theme.of(context)
-                          .textTheme
-                          .titleLarge
-                          ?.copyWith(fontWeight: FontWeight.bold),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    username,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
-                    const SizedBox(height: 4),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(email, style: Theme.of(context).textTheme.bodyMedium),
+                  const SizedBox(height: 4),
+                  Text("Tier: $_tierLabel"),
+                  if (_expiryDate != null)
                     Text(
-                      email,
-                      style: Theme.of(context).textTheme.bodyMedium,
+                      "Expires: ${_expiryDate!.toLocal().toString().split(' ')[0]}",
                     ),
-                  ],
-                ),
+                ],
               ),
             ),
           ],
