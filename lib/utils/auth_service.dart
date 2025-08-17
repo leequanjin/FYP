@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -66,5 +67,24 @@ class AuthService {
     );
     await currentUser!.reauthenticateWithCredential(credential);
     await currentUser!.updatePassword(newPassword);
+  }
+
+  Future<bool> checkSubscriptionStatus() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final docRef = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final doc = await docRef.get();
+
+      if (doc.exists) {
+        final data = doc.data();
+        return (data != null && data.containsKey('isPremium'))
+            ? data['isPremium'] as bool
+            : false;
+      } else {
+        await docRef.set({'isPremium': false}, SetOptions(merge: true));
+        return false;
+      }
+    }
+    return false;
   }
 }

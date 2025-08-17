@@ -55,6 +55,7 @@ class _AuthScreenState extends State<AuthScreen> {
   bool isLoading = false;
   String? pinError;
   bool appLockEnabled = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -88,10 +89,18 @@ class _AuthScreenState extends State<AuthScreen> {
     if (biometricAvailable) {
       _biometricAuthentication();
     }
+
+    setState(() => _isLoading = false);
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      );
+    }
+
     return Scaffold(
       body: SafeArea(
         child: Center(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:moodly/theme/theme_config.dart';
+import 'package:moodly/utils/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider with ChangeNotifier {
@@ -14,6 +15,12 @@ class ThemeProvider with ChangeNotifier {
   ThemeProvider() {
     _loadPreferences();
   }
+
+  static const List<AppTheme> premiumThemes = [
+    AppTheme.redWine,
+    AppTheme.greenForest,
+    AppTheme.mangoMojito,
+  ];
 
   void toggleDarkMode() {
     _isDarkMode = !_isDarkMode;
@@ -39,7 +46,17 @@ class ThemeProvider with ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _isDarkMode = prefs.getBool('darkMode') ?? false;
     final themeIndex = prefs.getInt('themeIndex') ?? AppTheme.indigoNights.index;
-    _selectedTheme = AppTheme.values[themeIndex];
+    AppTheme savedTheme = AppTheme.values[themeIndex];
+
+    final isPremium = await authService.value.checkSubscriptionStatus();
+
+    if (premiumThemes.contains(savedTheme) && !isPremium) {
+      _selectedTheme = AppTheme.indigoNights;
+      await prefs.setInt('themeIndex', _selectedTheme.index);
+    } else {
+      _selectedTheme = savedTheme;
+    }
+
     notifyListeners();
   }
 

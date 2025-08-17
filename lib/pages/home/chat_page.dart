@@ -140,53 +140,53 @@ class _ChatPageState extends State<ChatPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SafeArea(
-      child: Scaffold(
-        appBar: AppBar(
-          centerTitle: true,
-          titleSpacing: 0,
-          title: Row(
-            children: [
-              const SizedBox(width: 8),
-              Expanded(
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedCompanion,
-                    onChanged: (value) {
-                      if (value != null) {
-                        setState(() {
-                          _selectedCompanion = value;
-                        });
-                        final newPersonality = _getPersonalityFromLabel(value);
-                        _gemini.changePersonality(newPersonality);
-                      }
-                    },
-                    items: _companions.map((companion) {
-                      return DropdownMenuItem<String>(
-                        value: companion,
-                        child: Text(
-                          companion,
-                          style: const TextStyle(fontSize: 16),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                  ),
+    return Scaffold(
+      appBar: AppBar(
+        centerTitle: true,
+        titleSpacing: 0,
+        title: Row(
+          children: [
+            const SizedBox(width: 8),
+            Expanded(
+              child: DropdownButtonHideUnderline(
+                child: DropdownButton<String>(
+                  isExpanded: true,
+                  value: _selectedCompanion,
+                  onChanged: (value) {
+                    if (value != null) {
+                      setState(() {
+                        _selectedCompanion = value;
+                      });
+                      final newPersonality = _getPersonalityFromLabel(value);
+                      _gemini.changePersonality(newPersonality);
+                    }
+                  },
+                  items: _companions.map((companion) {
+                    return DropdownMenuItem<String>(
+                      value: companion,
+                      child: Text(
+                        companion,
+                        style: const TextStyle(fontSize: 16),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList(),
                 ),
               ),
-            ],
-          ),
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.summarize),
-              tooltip: "Summarize & Export",
-              onPressed: _summarizeAndExport,
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.summarize),
+            tooltip: "Summarize & Export",
+            onPressed: _summarizeAndExport,
+          ),
+        ],
+      ),
 
-        body: Column(
+      body: SafeArea(
+        child: Column(
           children: [
             Expanded(
               child: ListView.builder(
@@ -236,16 +236,33 @@ class _ChatPageState extends State<ChatPage> {
                   Expanded(
                     child: TextField(
                       controller: _controller,
-                      decoration: const InputDecoration(
+                      decoration: InputDecoration(
                         hintText: 'Type your message...',
-                        border: OutlineInputBorder(),
+                        contentPadding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
+                        filled: true,
+                        fillColor: Theme.of(context).colorScheme.surfaceContainer,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
                       ),
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: _sendMessage,
+                  const SizedBox(width: 8),
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.send),
+                      color: Colors.white,
+                      onPressed: _sendMessage,
+                    ),
                   ),
                 ],
               ),

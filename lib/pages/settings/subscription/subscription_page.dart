@@ -152,7 +152,6 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 _buildTierCard(
                   title: "Free Tier",
                   features: [
-                    "Limited cloud storage (up to 50 entries)",
                     "Basic themes only",
                     "No chatbot access",
                   ],
@@ -161,7 +160,6 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                 _buildTierCard(
                   title: "Premium Tier",
                   features: [
-                    "Unlimited cloud storage",
                     "Premium themes",
                     "Access to chatbot",
                   ],
@@ -193,11 +191,14 @@ class _SubscriptionPageState extends State<SubscriptionPage> {
                   OutlinedButton(
                     onPressed: _cancelSubscription,
                     style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       side: BorderSide(
                         color: Theme.of(context).colorScheme.error,
-                        width: 1.5,
+                        width: 1,
                       ),
+                      minimumSize: const Size.fromHeight(50),
                     ),
                     child: Text(
                       'Cancel Subscription',
