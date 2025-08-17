@@ -59,7 +59,6 @@ class _EntryPageState extends State<EntryPage> {
     final picked = await _picker.pickImage(source: ImageSource.gallery);
     if (picked == null) return;
 
-    // 1) Copy into app documents dir
     final appDir = await getApplicationDocumentsDirectory();
     final fileName =
         "${DateTime.now().millisecondsSinceEpoch}_${p.basename(picked.path)}";
@@ -201,7 +200,6 @@ class _EntryPageState extends State<EntryPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // App bar actions
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 8.0),
                 child: Row(
@@ -321,7 +319,6 @@ class _EntryPageState extends State<EntryPage> {
                             runSpacing: 8,
                             children: List.generate(_thumbPaths.length, (i) {
                               final thumb = _thumbPaths[i];
-                              // resolve full path (safe guard on index mismatch)
                               final full = (i < _imagePaths.length)
                                   ? _imagePaths[i]
                                   : _imagePaths.isNotEmpty

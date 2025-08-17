@@ -28,14 +28,12 @@ class _HomePageState extends State<HomePage> {
   Future<void> _loadMonths() async {
     final allEntries = await JournalTable.getAll();
 
-    // Extract months
     final months = <String>{};
     for (var entry in allEntries) {
       final date = DateFormat('dd-MM-yyyy').parse(entry.date);
       months.add(DateFormat('MMM yyyy').format(date));
     }
 
-    // Sort newest first
     final sortedMonths = months.toList()
       ..sort(
         (a, b) => DateFormat(
@@ -43,7 +41,6 @@ class _HomePageState extends State<HomePage> {
         ).parse(b).compareTo(DateFormat('MMM yyyy').parse(a)),
       );
 
-    // Decide which month to expand by default
     final currentMonth = DateFormat('MMM yyyy').format(DateTime.now());
     String? expandMonth;
     if (sortedMonths.contains(currentMonth)) {
@@ -70,7 +67,6 @@ class _HomePageState extends State<HomePage> {
 
     setState(() => _loadingMonth[monthKey] = true);
 
-    // For simplicity, re-fetch all and filter. You can add a dedicated query for a single month.
     final allEntries = await JournalTable.getAll();
     final entries =
         allEntries.where((e) {
@@ -101,7 +97,6 @@ class _HomePageState extends State<HomePage> {
         builder: (_) => EntryPage(existingText: text, date: date),
       ),
     );
-    // Refresh everything
     _monthEntriesCache.clear();
     _expandedMonths.clear();
     await _loadMonths();

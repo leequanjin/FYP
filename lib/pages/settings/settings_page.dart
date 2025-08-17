@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:moodly/pages/settings/auth/auth_layout.dart';
 import 'package:moodly/pages/settings/auth/login_page.dart';
 import 'package:moodly/pages/settings/auth/profile_page.dart';
 import 'package:moodly/pages/settings/backup/BackupRestorePage.dart';
+import 'package:moodly/pages/settings/lock/lock_page.dart';
 import 'package:moodly/pages/settings/subscription/subscription_page.dart';
 import 'package:moodly/pages/settings/theme/theme_picker_page.dart';
 import 'package:moodly/utils/auth_service.dart';
@@ -21,7 +23,11 @@ class SettingsPage extends StatelessWidget {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Logged out successfully")),
         );
-        popPage(context);
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(builder: (_) => const AuthLayout()),
+              (route) => false,
+        );
       }
     } catch (e) {
       if (context.mounted) {
@@ -63,7 +69,10 @@ class SettingsPage extends StatelessWidget {
         const SizedBox(height: 24),
         Padding(
           padding: const EdgeInsets.only(left: 12.0),
-          child: Text('GENERAL', style: Theme.of(context).textTheme.labelLarge),
+          child: Text(
+            'USER SETTINGS',
+            style: Theme.of(context).textTheme.labelLarge,
+          ),
         ),
         const SizedBox(height: 12),
         _buildSectionCard(
@@ -85,12 +94,75 @@ class SettingsPage extends StatelessWidget {
               title: 'Subscription',
               subtitle: 'Purchase Subscription Plan',
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const SubscriptionPage()),
-                );
+                if (user == null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const SubscriptionPage()),
+                  );
+                }
               },
             ),
+            SettingsTile(
+              icon: Icons.backup_outlined,
+              title: 'Backup & Restore',
+              subtitle: 'Backup & Restore User Data',
+              onTap: () {
+                if (user == null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                  );
+                } else {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const BackupRestorePage(),
+                    ),
+                  );
+                }
+              },
+            ),
+
+            if (user == null)
+              SettingsTile(
+                icon: Icons.login,
+                title: 'Sign In',
+                subtitle: 'Sign In to Access User Settings',
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                  );
+                },
+              ),
+            if (user != null)
+              SettingsTile(
+                icon: Icons.logout,
+                title: 'Logout',
+                subtitle: 'Logging Out Will Disable User Settings',
+                onTap: () async {
+                  bool? confirmLogout = await showLogoutConfirmation(context);
+                  if (confirmLogout == true) {
+                    logout(context);
+                  }
+                },
+              ),
+          ],
+        ),
+        const SizedBox(height: 24),
+        Padding(
+          padding: const EdgeInsets.only(left: 12.0),
+          child: Text('GENERAL', style: Theme.of(context).textTheme.labelLarge),
+        ),
+        const SizedBox(height: 12),
+        _buildSectionCard(
+          context,
+          tiles: [
             SettingsTile(
               icon: Icons.color_lens_outlined,
               title: 'Themes',
@@ -103,19 +175,20 @@ class SettingsPage extends StatelessWidget {
               },
             ),
             SettingsTile(
-              icon: Icons.backup_outlined,
-              title: 'Backup & Restore',
-              subtitle: 'Backup & Restore User Data',
+              icon: Icons.lock_outline,
+              title: 'App Lock',
+              subtitle: 'Enable Biometric or PIN Lock',
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const BackupRestorePage()),
+                  MaterialPageRoute(builder: (_) => const LockPage()),
                 );
               },
             ),
           ],
         ),
         const SizedBox(height: 24),
+
         Padding(
           padding: const EdgeInsets.only(left: 12.0),
           child: Text('SUPPORT', style: Theme.of(context).textTheme.labelLarge),
@@ -139,28 +212,6 @@ class SettingsPage extends StatelessWidget {
               title: 'About Us',
               onTap: () {},
             ),
-            if (user == null)
-              SettingsTile(
-                icon: Icons.login,
-                title: 'Sign In',
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginPage()),
-                  );
-                },
-              ),
-            if (user != null)
-              SettingsTile(
-                icon: Icons.logout,
-                title: 'Logout',
-                onTap: () async {
-                  bool? confirmLogout = await showLogoutConfirmation(context);
-                  if (confirmLogout == true) {
-                    logout(context);
-                  }
-                },
-              ),
           ],
         ),
       ],

@@ -6,8 +6,8 @@ class JournalEntry {
   final String date;
   final String mood;
   final List<String> tags;
-  final List<String> imagePaths; // Local paths in SQLite / URLs in backup
-  final List<String> thumbPaths; // Local paths in SQLite / URLs in backup
+  final List<String> imagePaths;
+  final List<String> thumbPaths;
 
   JournalEntry({
     required this.id,
@@ -19,7 +19,6 @@ class JournalEntry {
     required this.thumbPaths,
   });
 
-  // ---------- For Local SQLite ----------
   factory JournalEntry.fromMap(
     Map<String, dynamic> map, {
     List<String> tags = const [],
@@ -48,7 +47,6 @@ class JournalEntry {
     );
   }
 
-  // ---------- For Firestore Backup ----------
   factory JournalEntry.fromBackupMap(Map<String, dynamic> map) {
     return JournalEntry(
       id: map['entryId'] != null ? int.tryParse(map['entryId']) : null,
@@ -71,17 +69,15 @@ class JournalEntry {
     );
   }
 
-  // ---------- Save for Local SQLite ----------
   Map<String, dynamic> toMap() => {
     if (id != null) 'id': id,
     'content': content,
     'date': date,
     'mood': mood,
-    'images': imagePaths.join(','), // Local file paths
-    'thumbs': thumbPaths.join(','), // Local file paths
+    'images': imagePaths.join(','),
+    'thumbs': thumbPaths.join(','),
   };
 
-  // ---------- Save for Firestore Backup ----------
   Map<String, dynamic> toBackupMap() => {
     'entryId':
         id?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
@@ -93,7 +89,6 @@ class JournalEntry {
     'thumbPaths': thumbPaths.map((p) => path.basename(p)).toList(),
   };
 
-  // ---------- Copy Method for Easy Path Replacement ----------
   JournalEntry copyWith({
     int? id,
     String? content,

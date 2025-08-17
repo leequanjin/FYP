@@ -21,12 +21,10 @@ class AuthLayout extends StatelessWidget {
               return const AppLoadingPage();
             }
 
-            // If not logged in
             if (!snapshot.hasData || snapshot.data == null) {
               return const BottomNavPage();
             }
 
-            // If logged in
             return const BottomNavPage();
           },
         );

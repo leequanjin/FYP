@@ -267,7 +267,7 @@ class _ListPageState extends State<ListPage> {
             switchInCurve: Curves.easeInOut,
             switchOutCurve: Curves.easeInOut,
             child: ListView(
-              key: ValueKey(_tasks), // Ensures switch triggers on change
+              key: ValueKey(_tasks),
               children: [
                 ..._buildSection("Previous", previousItems),
                 ..._buildSection("Today", todayItems),

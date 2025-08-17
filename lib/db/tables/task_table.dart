@@ -1,7 +1,7 @@
 import 'package:intl/intl.dart';
+import 'package:moodly/db/database_service.dart';
+import 'package:moodly/models/Task.dart';
 import 'package:sqflite/sqflite.dart';
-import '../../models/Task.dart';
-import '../database_service.dart';
 
 class TaskTable {
   static const tableName = "tasks";
@@ -21,7 +21,6 @@ class TaskTable {
     ''');
   }
 
-  /// Add a task using a DateTime (formats to dd-MM-yyyy)
   static Future<void> add(String title, DateTime date) async {
     final db = await DatabaseService.instance.database;
     final task = Task(
@@ -32,7 +31,6 @@ class TaskTable {
     await db.insert(tableName, task.toMap());
   }
 
-  /// Add a task using a raw date string (used for restore from backup)
   static Future<void> addISO(String title, String dateStr, int status) async {
     final db = await DatabaseService.instance.database;
     final task = Task(
@@ -62,7 +60,6 @@ class TaskTable {
   static Future<void> update(int id, String title, DateTime date) async {
     final db = await DatabaseService.instance.database;
 
-    // Keep existing status instead of resetting to 0
     final existing = await db.query(
       tableName,
       columns: [columnStatus],
@@ -96,13 +93,11 @@ class TaskTable {
     );
   }
 
-  /// Clear all tasks (used for restore)
   static Future<void> clearAll() async {
     final db = await DatabaseService.instance.database;
     await db.delete(tableName);
   }
 
-  /// Get the last inserted task (optional helper)
   static Future<Task?> getLastInserted() async {
     final db = await DatabaseService.instance.database;
     final result = await db.query(

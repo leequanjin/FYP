@@ -151,7 +151,7 @@ class _ChatPageState extends State<ChatPage> {
               Expanded(
                 child: DropdownButtonHideUnderline(
                   child: DropdownButton<String>(
-                    isExpanded: true, // VERY IMPORTANT
+                    isExpanded: true,
                     value: _selectedCompanion,
                     onChanged: (value) {
                       if (value != null) {

@@ -244,8 +244,9 @@ class _StatsPageState extends State<StatsPage> {
       return [
         PieChartSectionData(
           value: 1,
-          color: Colors.grey.shade300,
+          color: Theme.of(context).colorScheme.secondaryContainer,
           title: 'No Data',
+          titleStyle: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer,),
           radius: 60,
         ),
       ];

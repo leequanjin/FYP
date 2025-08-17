@@ -60,7 +60,7 @@ class _ProfilePageState extends State<ProfilePage> {
                       ).then((_) {
                         setState(
                           () {},
-                        ); // Rebuild the ProfilePage when coming back
+                        );
                       });
                     },
                   ),

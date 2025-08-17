@@ -20,7 +20,7 @@ class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   JournalEntry? _selectedEntry;
-  Map<String, JournalEntry> _entryMap = {}; // key = yyyy-MM-dd
+  Map<String, JournalEntry> _entryMap = {};
 
   @override
   void initState() {
@@ -88,7 +88,7 @@ class _CalendarPageState extends State<CalendarPage> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      constraints: const BoxConstraints.expand(), // ensure it fills the screen
+      constraints: const BoxConstraints.expand(),
       child: SingleChildScrollView(
         padding: const EdgeInsets.only(bottom: 16),
         child: Center(
@@ -98,7 +98,6 @@ class _CalendarPageState extends State<CalendarPage> {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 16),
-                // 📅 Calendar Card
                 Card(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
