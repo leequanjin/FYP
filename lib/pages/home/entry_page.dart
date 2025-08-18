@@ -6,8 +6,8 @@ import 'package:moodly/models/JournalEntry.dart';
 import 'package:moodly/pages/home/chat_page.dart';
 import 'package:moodly/pages/image/FullImagePage.dart';
 import 'package:moodly/repositories/journal_repository.dart';
-import 'package:moodly/utils/auth_service.dart';
 import 'package:moodly/utils/thumbnail_helper.dart';
+import 'package:moodly/utils/user_service.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:path/path.dart' as p;
 
@@ -275,7 +275,7 @@ class _EntryPageState extends State<EntryPage> {
                           tooltip: "AI Chat",
                           icon: const Icon(Icons.android),
                           onPressed: () async {
-                            final isPremium = await authService.value.checkSubscriptionStatus();
+                            final isPremium = await UserService.isPremiumUser();
 
                             if (!isPremium) {
                               ScaffoldMessenger.of(context).showSnackBar(

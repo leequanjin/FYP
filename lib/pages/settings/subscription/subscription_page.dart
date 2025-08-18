@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
+import 'package:moodly/utils/user_service.dart';
 
 class SubscriptionPage extends StatefulWidget {
   const SubscriptionPage({super.key});
@@ -12,48 +13,47 @@ class SubscriptionPage extends StatefulWidget {
 
 class _SubscriptionPageState extends State<SubscriptionPage> {
   bool _isPremium = false;
+  DateTime? _premiumExpiry;
   bool _loading = true;
 
   @override
   void initState() {
     super.initState();
-    _checkSubscriptionStatus();
+    _loadSubscriptionStatus();
   }
 
-  Future<void> _checkSubscriptionStatus() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('users')
-          .doc(user.uid)
-          .get();
-      setState(() {
-        _isPremium = doc.data()?['isPremium'] ?? false;
-        _loading = false;
-      });
-    }
+  Future<void> _loadSubscriptionStatus() async {
+    final premiumStatus = await UserService.isPremiumUser();
+    final expiry = await UserService.getPremiumExpiry();
+
+    setState(() {
+      _isPremium = premiumStatus;
+      _premiumExpiry = expiry;
+      _loading = false;
+    });
   }
 
   Future<void> _upgradeToPremium() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
-        {'isPremium': true},
-      );
-      setState(() {
-        _isPremium = true;
-      });
-    }
+    await UserService.upgradeToPremium();
+    final expiry = await UserService.getPremiumExpiry();
+
+    setState(() {
+      _isPremium = true;
+      _premiumExpiry = expiry;
+    });
   }
 
   Future<void> _cancelSubscription() async {
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null) {
-      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
-        {'isPremium': false},
-      );
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid != null) {
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'isPremium': false,
+        'premiumExpiry': null,
+      }, SetOptions(merge: true));
+
       setState(() {
         _isPremium = false;
+        _premiumExpiry = null;
       });
     }
   }

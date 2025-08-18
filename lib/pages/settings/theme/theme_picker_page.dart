@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:moodly/pages/settings/auth/auth_app_bar.dart';
 import 'package:moodly/theme/theme_config.dart';
 import 'package:moodly/theme/theme_provider.dart';
-import 'package:moodly/utils/auth_service.dart';
+import 'package:moodly/utils/user_service.dart';
 import 'package:provider/provider.dart';
 
 class ThemePickerPage extends StatelessWidget {
@@ -31,7 +31,7 @@ class ThemePickerPage extends StatelessWidget {
     return Scaffold(
       appBar: AuthAppBar(titleText: 'Themes'),
       body: FutureBuilder<bool>(
-        future: authService.value.checkSubscriptionStatus(),
+        future: UserService.isPremiumUser(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());

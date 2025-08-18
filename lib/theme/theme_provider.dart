@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:moodly/theme/theme_config.dart';
 import 'package:moodly/utils/auth_service.dart';
+import 'package:moodly/utils/user_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ThemeProvider with ChangeNotifier {
@@ -48,7 +49,7 @@ class ThemeProvider with ChangeNotifier {
     final themeIndex = prefs.getInt('themeIndex') ?? AppTheme.indigoNights.index;
     AppTheme savedTheme = AppTheme.values[themeIndex];
 
-    final isPremium = await authService.value.checkSubscriptionStatus();
+    final isPremium = await UserService.isPremiumUser();
 
     if (premiumThemes.contains(savedTheme) && !isPremium) {
       _selectedTheme = AppTheme.indigoNights;
