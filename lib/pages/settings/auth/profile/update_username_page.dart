@@ -92,10 +92,12 @@ class _UpdateUsernamePageState extends State<UpdateUsernamePage> {
                           TextFormField(
                             controller: _controllerUsername,
                             validator: (value) {
-                              if (value == null || value.isEmpty) {
+                              final trimmedValue = value?.trim() ?? '';
+
+                              if (trimmedValue.isEmpty) {
                                 return 'Please enter a username';
                               }
-                              if (value.length < 2) {
+                              if (trimmedValue.length < 2) {
                                 return 'Username must be at least 2 characters';
                               }
                               return null;
