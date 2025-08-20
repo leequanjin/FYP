@@ -16,7 +16,6 @@ class _LockPageState extends State<LockPage> {
   bool _biometricEnabled = false;
   String? _savedPin;
   final LocalAuthentication auth = LocalAuthentication();
-  final TextEditingController _pinController = TextEditingController();
 
   @override
   void initState() {
@@ -90,7 +89,7 @@ class _LockPageState extends State<LockPage> {
                 if (newPin != null &&
                     confirmPin != null &&
                     newPin == confirmPin &&
-                    newPin!.isNotEmpty) {
+                    newPin!.length == 4) {
                   prefs.setString('user_pin', newPin!);
                   setState(() {
                     _savedPin = newPin;
@@ -102,7 +101,7 @@ class _LockPageState extends State<LockPage> {
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text("PINs do not match"),
+                      content: const Text("PINs must match and be 4 digits"),
                       backgroundColor: Theme.of(context).colorScheme.error,
                     ),
                   );
@@ -261,12 +260,12 @@ class _LockPageState extends State<LockPage> {
                 if (newPin != null &&
                     confirmPin != null &&
                     newPin == confirmPin &&
-                    newPin!.isNotEmpty) {
+                    newPin!.length == 4) {
                   Navigator.pop(context, true);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text("PINs do not match"),
+                      content: const Text("PINs must match and be 4 digits"),
                       backgroundColor: Theme.of(context).colorScheme.error,
                     ),
                   );

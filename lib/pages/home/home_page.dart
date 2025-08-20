@@ -384,7 +384,7 @@ class _EntryTile extends StatelessWidget {
                   }
                 },
                 itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'edit', child: Text('Edit Note')),
+                  PopupMenuItem(value: 'edit', child: Text('View/Edit')),
                   PopupMenuItem(value: 'delete', child: Text('Delete')),
                 ],
               ),
