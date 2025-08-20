@@ -164,27 +164,130 @@ class _LockPageState extends State<LockPage> {
     });
   }
 
-  Future<void> _savePin() async {
-    if (!_appLockEnabled) return;
-
-    if (_pinController.text.length != 4) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("PIN must be 4 digits")));
-      return;
-    }
-
+  Future<void> _changePin() async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('user_pin', _pinController.text);
-    setState(() {
-      _savedPin = _pinController.text;
+
+    String? enteredOldPin;
+    final oldPinController = TextEditingController();
+
+    bool verified = false;
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surfaceBright,
+          title: const Center(child: Text("Verify Current PIN")),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Enter your current PIN"),
+              const SizedBox(height: 12),
+              Pinput(
+                length: 4,
+                obscureText: true,
+                controller: oldPinController,
+                onChanged: (value) => enteredOldPin = value,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                if (enteredOldPin == _savedPin) {
+                  Navigator.pop(context, true);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text("Incorrect current PIN"),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              },
+              child: const Text("Verify"),
+            ),
+          ],
+        );
+      },
+    ).then((result) => verified = result ?? false);
+
+    if (!verified) return;
+
+    String? newPin;
+    String? confirmPin;
+    final newPinController = TextEditingController();
+    final confirmPinController = TextEditingController();
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: Theme.of(context).colorScheme.surfaceBright,
+          title: const Center(child: Text("Change PIN")),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text("Enter new PIN"),
+              const SizedBox(height: 12),
+              Pinput(
+                length: 4,
+                obscureText: true,
+                controller: newPinController,
+                onChanged: (value) => newPin = value,
+              ),
+              const SizedBox(height: 20),
+              const Divider(),
+              const Text("Confirm new PIN"),
+              const SizedBox(height: 12),
+              Pinput(
+                length: 4,
+                obscureText: true,
+                controller: confirmPinController,
+                onChanged: (value) => confirmPin = value,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Cancel"),
+            ),
+            TextButton(
+              onPressed: () {
+                if (newPin != null &&
+                    confirmPin != null &&
+                    newPin == confirmPin &&
+                    newPin!.isNotEmpty) {
+                  Navigator.pop(context, true);
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text("PINs do not match"),
+                      backgroundColor: Theme.of(context).colorScheme.error,
+                    ),
+                  );
+                }
+              },
+              child: const Text("Save"),
+            ),
+          ],
+        );
+      },
+    ).then((saved) async {
+      if (saved == true) {
+        await prefs.setString('user_pin', newPin!);
+        setState(() {
+          _savedPin = newPin;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text("PIN changed successfully")),
+        );
+      }
     });
-
-    _pinController.clear();
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("PIN saved successfully")));
   }
 
   @override
@@ -207,52 +310,13 @@ class _LockPageState extends State<LockPage> {
                 opacity: _appLockEnabled ? 1.0 : 0.5,
                 child: IgnorePointer(
                   ignoring: !_appLockEnabled,
-                  child: Column(
-                    children: [
-                      const Text(
-                        "Set your PIN",
-                        style: TextStyle(fontSize: 18),
-                      ),
-                      const SizedBox(height: 20),
-
-                      Center(
-                        child: Pinput(
-                          controller: _pinController,
-                          length: 4,
-                          obscureText: false,
-                          autofocus: false,
-                        ),
-                      ),
-                      const SizedBox(height: 20),
-
-                      Center(
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(8),
-                              side: BorderSide(
-                                color: Theme.of(
-                                  context,
-                                ).colorScheme.outlineVariant,
-                                width: 1,
-                              ),
-                            ),
-                            backgroundColor: Theme.of(
-                              context,
-                            ).colorScheme.surface,
-                          ),
-                          onPressed: _savePin,
-                          child: Text(
-                            _savedPin == null ? "Save PIN" : "Change PIN",
-                          ),
-                        ),
-                      ),
-                    ],
+                  child: SwitchListTile(
+                    title: const Text("Enable Biometric Login"),
+                    value: _biometricEnabled,
+                    onChanged: _toggleBiometric,
                   ),
                 ),
               ),
-
-              const SizedBox(height: 40),
 
               const Divider(height: 20),
 
@@ -260,10 +324,23 @@ class _LockPageState extends State<LockPage> {
                 opacity: _appLockEnabled ? 1.0 : 0.5,
                 child: IgnorePointer(
                   ignoring: !_appLockEnabled,
-                  child: SwitchListTile(
-                    title: const Text("Enable Biometric Login"),
-                    value: _biometricEnabled,
-                    onChanged: _toggleBiometric,
+                  child: ListTile(
+                    title: const Text(
+                      "Change your PIN",
+                    ),
+                    trailing: OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        side: BorderSide(
+                          color: Theme.of(context).colorScheme.outlineVariant,
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.surface,
+                      ),
+                      onPressed: _changePin,
+                      child: const Text("Change"),
+                    ),
                   ),
                 ),
               ),
